@@ -5,10 +5,10 @@ using Unity.Netcode;
 public class UIGameManager : MonoBehaviour
 {
     [SerializeField]
-    private TMP_Text CodeText;
+    private TMP_Text _codeText;
 
     private void Start()
     {
-        CodeText.text = GameObject.Find("NetworkManager").GetComponent<Relay>().joinCode;
+        _codeText.text = GameObject.Find("NetworkManager").GetComponent<Relay>().joinCode;
     }
 }

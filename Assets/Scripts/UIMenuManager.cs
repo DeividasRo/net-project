@@ -5,34 +5,34 @@ using UnityEngine.UI;
 public class UIMenuManager : MonoBehaviour
 {
     [SerializeField]
-    private Relay relay;
+    private Relay _relay;
     [SerializeField]
-    private TMP_Text joinInputText;
+    private TMP_Text _joinInputText;
     [SerializeField]
-    private Button joinButton;
+    private Button _joinButton;
     [SerializeField]
-    private TMP_InputField joinCodeIF;
+    private TMP_InputField _joinCodeIF;
 
     private void Update()
     {
-        if (joinInputText.text.Length != joinCodeIF.characterLimit + 1)
+        if (_joinInputText.text.Length != _joinCodeIF.characterLimit + 1)
         {
-            joinButton.interactable = false;
+            _joinButton.interactable = false;
         }
         else
         {
-            joinButton.interactable = true;
+            _joinButton.interactable = true;
         }
     }
 
     public void OnJoinButtonClicked()
     {
-        relay.joinCode = joinInputText.text.Substring(0, joinCodeIF.characterLimit);
-        relay.JoinRelay();
+        _relay.joinCode = _joinInputText.text.Substring(0, _joinCodeIF.characterLimit);
+        _relay.JoinRelay();
     }
 
     public void OnHostButtonClicked()
     {
-        relay.CreateRelay();
+        _relay.CreateRelay();
     }
 }

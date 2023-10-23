@@ -10,6 +10,7 @@ using UnityEngine.SceneManagement;
 
 public class Relay : MonoBehaviour
 {
+    public int maxConnections = 2;
     public string joinCode = "";
     private async void Start()
     {
@@ -26,7 +27,7 @@ public class Relay : MonoBehaviour
     {
         try
         {
-            Allocation allocation = await RelayService.Instance.CreateAllocationAsync(2);
+            Allocation allocation = await RelayService.Instance.CreateAllocationAsync(maxConnections);
 
             joinCode = await RelayService.Instance.GetJoinCodeAsync(allocation.AllocationId);
 
@@ -35,9 +36,8 @@ public class Relay : MonoBehaviour
             RelayServerData relayServerData = new RelayServerData(allocation, "dtls");
 
             NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(relayServerData);
-
             NetworkManager.Singleton.StartHost();
-            SceneManager.LoadScene("Game");
+            NetworkManager.Singleton.SceneManager.LoadScene("Game", LoadSceneMode.Single);
         }
         catch (RelayServiceException e)
         {
@@ -56,9 +56,7 @@ public class Relay : MonoBehaviour
             RelayServerData relayServerData = new RelayServerData(joinAllocation, "dtls");
 
             NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(relayServerData);
-
             NetworkManager.Singleton.StartClient();
-            SceneManager.LoadScene("Game");
         }
         catch (RelayServiceException e)
         {

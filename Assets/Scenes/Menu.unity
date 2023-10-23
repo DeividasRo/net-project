@@ -464,9 +464,10 @@ MonoBehaviour:
   NetworkConfig:
     ProtocolVersion: 0
     NetworkTransport: {fileID: 298878507}
-    PlayerPrefab: {fileID: 0}
+    PlayerPrefab: {fileID: 2636769705172815645, guid: ca6e1b94456b24c4781d26ab6a2ef3e7, type: 3}
     Prefabs:
-      NetworkPrefabsLists: []
+      NetworkPrefabsLists:
+      - {fileID: 11400000, guid: 9610c5d52811ba94ab0f47d9cde19cca, type: 2}
     TickRate: 30
     ClientConnectionBufferTimeout: 10
     ConnectionApproval: 0
@@ -512,6 +513,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9f250bc513373a8488c6fc10e39e03d8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  maxConnections: 2
   joinCode: 
 --- !u!1 &339988759
 GameObject:
@@ -1170,10 +1172,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b3479759fb1906f4a92a0ecb6f6da498, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  relay: {fileID: 298878510}
-  joinInputText: {fileID: 112553284}
-  joinButton: {fileID: 448882654}
-  joinCodeIF: {fileID: 1721283834}
+  _relay: {fileID: 298878510}
+  _joinInputText: {fileID: 112553284}
+  _joinButton: {fileID: 448882654}
+  _joinCodeIF: {fileID: 1721283834}
 --- !u!4 &933826514
 Transform:
   m_ObjectHideFlags: 0
