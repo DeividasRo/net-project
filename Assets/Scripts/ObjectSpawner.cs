@@ -5,10 +5,9 @@ public class ObjectSpawner : MonoBehaviour
 {
     [HideInInspector]
     public float maxPosX, maxPosZ;
+    public int _objectCount;
     [SerializeField] private GameObject _prefab;
-    [SerializeField] private int _objectCount;
-    [Range(0, 2)]
-    [SerializeField] private float _objectSize;
+    [Range(0, 2)][SerializeField] private float _objectSize;
     private int _objectsSpawnedCount = 0;
 
     public void StartSpawning()
@@ -24,7 +23,6 @@ public class ObjectSpawner : MonoBehaviour
         {
             yield return new WaitForSeconds(0.04f);
             SpawnObject();
-            Debug.Log(_objectsSpawnedCount);
             _objectsSpawnedCount++;
         }
     }

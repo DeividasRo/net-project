@@ -23,8 +23,10 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    public void StartGame()
+    public void StartGame(int objectCount)
     {
+        _objectSpawner._objectCount = objectCount;
+        Debug.Log(_objectSpawner._objectCount);
         _objectSpawner.StartSpawning();
     }
 }

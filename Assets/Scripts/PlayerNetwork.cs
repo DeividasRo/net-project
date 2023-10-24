@@ -3,6 +3,7 @@ using UnityEngine;
 
 public class PlayerNetwork : NetworkBehaviour
 {
+    private NetworkVariable<int> _randomNumber = new NetworkVariable<int>(50, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
@@ -20,12 +21,22 @@ public class PlayerNetwork : NetworkBehaviour
     private void OnClientConnected(ulong clientId)
     {
         if (NetworkManager.Singleton.ConnectedClientsList.Count == NetworkManager.Singleton.GetComponent<Relay>().maxConnections)
-            StartGameClientRpc();
+            PrepareGame();
+    }
+
+    private void PrepareGame()
+    {
+        if (IsServer && IsLocalPlayer)
+        {
+            _randomNumber.Value = Random.Range(50, 1000);
+            Invoke("StartGameClientRpc", 3);
+        }
     }
 
     [ClientRpc]
     private void StartGameClientRpc()
     {
-        GameManager.Instance.StartGame();
+        Debug.Log("Game started!");
+        GameManager.Instance.StartGame(_randomNumber.Value);
     }
 }
