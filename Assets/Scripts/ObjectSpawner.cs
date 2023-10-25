@@ -31,15 +31,16 @@ public class ObjectSpawner : NetworkSingleton<ObjectSpawner>
         }
         if (_objectsSpawnedCount >= _objectCount)
         {
-            Invoke("FreezeAllObjects", 8f);
+            Invoke("StopAllObjects", 8f);
         }
     }
 
-    private void FreezeAllObjects()
+    private void StopAllObjects()
     {
         foreach (Rigidbody rb in spawnedRigidbodies)
         {
             rb.constraints = RigidbodyConstraints.FreezePosition;
+            rb.GetComponent<Collider>().enabled = false;
         }
     }
 
