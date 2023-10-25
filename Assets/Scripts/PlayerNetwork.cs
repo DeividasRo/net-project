@@ -3,7 +3,8 @@ using UnityEngine;
 
 public class PlayerNetwork : NetworkBehaviour
 {
-    private NetworkVariable<int> _randomNumber = new NetworkVariable<int>(50, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    private NetworkVariable<int> _randomObjectCount = new NetworkVariable<int>(50, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    private NetworkVariable<Vector2> _maxSpawnPositions = new NetworkVariable<Vector2>(new Vector2(3, 3), NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
@@ -28,7 +29,7 @@ public class PlayerNetwork : NetworkBehaviour
     {
         if (IsServer && IsLocalPlayer)
         {
-            _randomNumber.Value = Random.Range(50, 1000);
+            _randomObjectCount.Value = Random.Range(50, 1000);
             Invoke("StartGameClientRpc", 3);
         }
     }
@@ -36,7 +37,9 @@ public class PlayerNetwork : NetworkBehaviour
     [ClientRpc]
     private void StartGameClientRpc()
     {
+
         Debug.Log("Game started!");
-        GameManager.Instance.StartGame(_randomNumber.Value);
+        GameManager.Instance.StartGame(_randomObjectCount.Value, _maxSpawnPositions.Value);
     }
+
 }
