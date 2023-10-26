@@ -3,23 +3,24 @@ using TMPro;
 using Unity.Netcode;
 using UnityEngine.UI;
 
-public class UIGameManager : MonoBehaviour
+public class UIGameManager : Singleton<UIGameManager>
 {
     [SerializeField]
     private TMP_Text _codeText;
     [SerializeField]
     private Button _readyButton;
+    private PlayerNetwork _playerNetwork;
 
     private void Start()
     {
         _codeText.text = GameObject.Find("NetworkManager").GetComponent<Relay>().joinCode;
+        _playerNetwork = NetworkManager.Singleton.LocalClient.PlayerObject.GetComponent<PlayerNetwork>();
+        _playerNetwork.isReady.OnValueChanged += OnReadyValueChanged;
     }
 
     public void OnReadyButtonClicked()
     {
-        PlayerNetwork playerNetwork = NetworkManager.Singleton.LocalClient.PlayerObject.GetComponent<PlayerNetwork>();
-        playerNetwork.isReady.OnValueChanged += OnReadyValueChanged;
-        playerNetwork.ChangeReadyState();
+        _playerNetwork.ChangeReadyState();
     }
 
     private void OnReadyValueChanged(bool oldVal, bool newVal)
@@ -32,5 +33,10 @@ public class UIGameManager : MonoBehaviour
         {
             _readyButton.GetComponent<Image>().color = Color.white;
         }
+    }
+
+    public void ShowReadyButton(bool show)
+    {
+        _readyButton.gameObject.SetActive(show);
     }
 }
