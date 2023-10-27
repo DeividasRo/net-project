@@ -2,6 +2,7 @@ using UnityEngine;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine.UI;
+using System;
 
 public class UIGameManager : Singleton<UIGameManager>
 {
@@ -11,32 +12,29 @@ public class UIGameManager : Singleton<UIGameManager>
     private Button _readyButton;
     private PlayerNetwork _playerNetwork;
 
+
     private void Start()
     {
         _codeText.text = GameObject.Find("NetworkManager").GetComponent<Relay>().joinCode;
         _playerNetwork = NetworkManager.Singleton.LocalClient.PlayerObject.GetComponent<PlayerNetwork>();
-        _playerNetwork.isReady.OnValueChanged += OnReadyValueChanged;
     }
 
     public void OnReadyButtonClicked()
     {
-        _playerNetwork.ChangeReadyState();
+        _playerNetwork.SetPlayerReady();
+        _readyButton.GetComponent<Image>().color = Color.green;
     }
 
-    private void OnReadyValueChanged(bool oldVal, bool newVal)
+    public void ReadyButtonVisibilityByState(GameState state)
     {
-        if (newVal)
+        Debug.Log($"UIGameManager: {state}");
+        if (state == GameState.Started || state == GameState.Preparing)
         {
-            _readyButton.GetComponent<Image>().color = Color.green;
+            _readyButton.gameObject.SetActive(false);
         }
         else
         {
-            _readyButton.GetComponent<Image>().color = Color.white;
+            _readyButton.gameObject.SetActive(true);
         }
-    }
-
-    public void ShowReadyButton(bool show)
-    {
-        _readyButton.gameObject.SetActive(show);
     }
 }

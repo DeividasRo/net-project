@@ -25,7 +25,7 @@ public class ObjectSpawner : NetworkSingleton<ObjectSpawner>
     {
         while (_objectsSpawnedCount < _objectCount)
         {
-            yield return new WaitForSeconds(0.04f);
+            yield return new WaitForSeconds(0.03f);
             SpawnObject();
             _objectsSpawnedCount++;
         }
