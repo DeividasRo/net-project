@@ -81,7 +81,6 @@ public class PlayerNetwork : NetworkBehaviour
     [ClientRpc]
     private void StartGameClientRpc()
     {
-        Debug.Log(gameState.Value);
         GameManager.Instance.StartGame(_randomObjectCount.Value, _maxSpawnPositions.Value);
         Debug.Log("Game started!");
     }

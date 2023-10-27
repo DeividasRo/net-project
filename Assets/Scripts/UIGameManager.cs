@@ -27,7 +27,6 @@ public class UIGameManager : Singleton<UIGameManager>
 
     public void ReadyButtonVisibilityByState(GameState state)
     {
-        Debug.Log($"UIGameManager: {state}");
         if (state == GameState.Started || state == GameState.Preparing)
         {
             _readyButton.gameObject.SetActive(false);

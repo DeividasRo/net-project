@@ -9,7 +9,7 @@ public class UIMenuManager : MonoBehaviour
     [SerializeField]
     private TMP_Text _joinInputText;
     [SerializeField]
-    private Button _joinButton;
+    private Button _hostButton, _joinButton;
     [SerializeField]
     private TMP_InputField _joinCodeIF;
 
@@ -33,6 +33,8 @@ public class UIMenuManager : MonoBehaviour
 
     public void OnHostButtonClicked()
     {
+        _hostButton.interactable = false;
+        _joinButton.interactable = false;
         _relay.CreateRelay();
     }
 }
