@@ -2,12 +2,14 @@ using UnityEngine;
 
 public class GameManager : Singleton<GameManager>
 {
-    [SerializeField]
-    private ObjectSpawner _objectSpawner;
-
-    public void StartGame(int objectCount, Vector2 maxSpawnPositions)
+    public void StopAllObjects(float delay = 0f)
     {
-        Debug.Log(objectCount);
-        _objectSpawner.StartSpawning(objectCount, maxSpawnPositions);
+        foreach (GameObject go in GameObject.FindGameObjectsWithTag("FallingObject"))
+        {
+            Rigidbody rb = go.GetComponent<Rigidbody>();
+            rb.constraints = RigidbodyConstraints.FreezePosition;
+            rb.GetComponent<Collider>().enabled = false;
+        }
     }
+
 }

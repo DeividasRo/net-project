@@ -2,14 +2,17 @@ using UnityEngine;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine.UI;
-using System;
 
 public class UIGameManager : Singleton<UIGameManager>
 {
     [SerializeField]
     private TMP_Text _codeText;
     [SerializeField]
+    private TMP_Text _countdownText;
+    [SerializeField]
     private Button _readyButton;
+    [SerializeField]
+    private TMP_InputField _guessIF;
     private PlayerNetwork _playerNetwork;
 
 
@@ -25,15 +28,23 @@ public class UIGameManager : Singleton<UIGameManager>
         _readyButton.GetComponent<Image>().color = Color.green;
     }
 
-    public void ReadyButtonVisibilityByState(GameState state)
+    public void SetReadyButtonActive(bool toActive)
     {
-        if (state == GameState.Started || state == GameState.Preparing)
-        {
-            _readyButton.gameObject.SetActive(false);
-        }
-        else
-        {
-            _readyButton.gameObject.SetActive(true);
-        }
+        _readyButton.gameObject.SetActive(toActive);
+    }
+
+    public void SetGuessInputActive(bool toActive)
+    {
+        _guessIF.gameObject.SetActive(toActive);
+    }
+
+    public void SetCountdownActive(bool toActive)
+    {
+        _countdownText.gameObject.SetActive(toActive);
+    }
+
+    public void SetCountdownText(string countdownText)
+    {
+        _countdownText.text = countdownText;
     }
 }

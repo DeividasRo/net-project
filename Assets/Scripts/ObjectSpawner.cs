@@ -1,23 +1,40 @@
 using System.Collections;
 using UnityEngine;
-using System.Collections.Generic;
 using Unity.Netcode;
+using System.Collections.Generic;
 
-public class ObjectSpawner : NetworkSingleton<ObjectSpawner>
+public class ObjectSpawner : Singleton<ObjectSpawner>
 {
+    [SerializeField]
+    private GameObject _prefab;
+    [Range(0, 2)]
+    [SerializeField]
+    private float _objectSize;
+    private List<NetworkObject> _networkObjectsSpawned { get; set; }
     private int _objectCount;
+    private float _spawnFrequency;
     private float _maxPosX, _maxPosZ;
-    [SerializeField] private GameObject _prefab;
-    [Range(0, 2)][SerializeField] private float _objectSize;
-    private List<Rigidbody> spawnedRigidbodies;
     private int _objectsSpawnedCount = 0;
 
-    public void StartSpawning(int objectCount, Vector2 maxSpawnPositions)
+    private void Awake()
     {
+        _networkObjectsSpawned = new List<NetworkObject>();
+        NetworkManager.Singleton.OnServerStarted += InitializeObjectPool;
+    }
+
+    private void InitializeObjectPool()
+    {
+        Debug.Log("Object pool initialized.");
+        NetworkObjectPool.Singleton.InitializePool();
+    }
+
+    public void StartSpawning(int objectCount, float spawnFrequency, Vector2 maxSpawnPositions)
+    {
+
         _objectCount = objectCount;
+        _spawnFrequency = spawnFrequency;
         _maxPosX = maxSpawnPositions.x;
         _maxPosZ = maxSpawnPositions.y;
-        spawnedRigidbodies = new List<Rigidbody>();
         StartCoroutine("SpawnObjectsOverTime");
     }
 
@@ -25,35 +42,34 @@ public class ObjectSpawner : NetworkSingleton<ObjectSpawner>
     {
         while (_objectsSpawnedCount < _objectCount)
         {
-            yield return new WaitForSeconds(0.03f);
+            yield return new WaitForSeconds(_spawnFrequency);
             SpawnObject();
             _objectsSpawnedCount++;
-        }
-        if (_objectsSpawnedCount >= _objectCount)
-        {
-            Invoke("StopAllObjects", 8f);
-        }
-    }
-
-    private void StopAllObjects()
-    {
-        foreach (Rigidbody rb in spawnedRigidbodies)
-        {
-            rb.constraints = RigidbodyConstraints.FreezePosition;
-            rb.GetComponent<Collider>().enabled = false;
         }
     }
 
     private void SpawnObject()
     {
-        if (!IsServer) return;
+        NetworkObject obj = NetworkObjectPool.Singleton.GetNetworkObject(_prefab, new Vector3(Random.Range(-_maxPosX, _maxPosX), 8, Random.Range(-_maxPosZ, _maxPosZ)), Quaternion.identity);
 
-        GameObject prefabInstance = Instantiate(_prefab, new Vector3(Random.Range(-_maxPosX, _maxPosX), 8, Random.Range(-_maxPosZ, _maxPosZ)), Quaternion.identity);
-        prefabInstance.transform.localScale = new Vector3(_objectSize, _objectSize, _objectSize);
+        obj.GetComponent<Transform>().localScale = new Vector3(_objectSize, _objectSize, _objectSize);
 
-        spawnedRigidbodies.Add(prefabInstance.GetComponent<Rigidbody>());
 
-        prefabInstance.GetComponent<NetworkObject>().Spawn();
+        if (!obj.IsSpawned)
+        {
+            obj.Spawn(destroyWithScene: true);
+            _networkObjectsSpawned.Add(obj);
+        }
+    }
+
+    public void DestroyAllObjects()
+    {
+        foreach (NetworkObject obj in _networkObjectsSpawned)
+        {
+            NetworkObjectPool.Singleton.ReturnNetworkObject(obj, _prefab);
+            if (obj.IsSpawned)
+                obj.Despawn();
+        }
     }
 
 }
