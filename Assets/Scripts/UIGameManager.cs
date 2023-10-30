@@ -36,9 +36,9 @@ public class UIGameManager : Singleton<UIGameManager>
         _playerNetwork.SetPlayerReady();
     }
 
-    public void UpdateReadyButtonColor()
+    public void UpdateReadyButtonColorByReadyState(bool ready)
     {
-        if (_playerNetwork.isReady.Value)
+        if (ready)
         {
             _readyButton.GetComponent<Image>().color = Color.green;
         }

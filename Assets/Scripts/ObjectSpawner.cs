@@ -89,7 +89,7 @@ public class ObjectSpawner : Singleton<ObjectSpawner>
             rb.constraints = RigidbodyConstraints.None;
             NetworkObjectPool.Singleton.ReturnNetworkObject(obj, _prefab);
             if (obj.IsSpawned)
-                obj.Despawn();
+                obj.Despawn(false);
         }
     }
 
