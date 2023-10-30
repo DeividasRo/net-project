@@ -2,6 +2,7 @@ using UnityEngine;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine.UI;
+using JetBrains.Annotations;
 
 public class UIGameManager : Singleton<UIGameManager>
 {
@@ -19,13 +20,39 @@ public class UIGameManager : Singleton<UIGameManager>
     private void Start()
     {
         _codeText.text = GameObject.Find("NetworkManager").GetComponent<Relay>().joinCode;
+        _guessIF.onValidateInput += ValidateGuessInput;
         _playerNetwork = NetworkManager.Singleton.LocalClient.PlayerObject.GetComponent<PlayerNetwork>();
+    }
+
+    private char ValidateGuessInput(string text, int charIndex, char addedChar)
+    {
+        if (!char.IsDigit(addedChar))
+        {
+            return '\0';
+        }
+        return addedChar;
     }
 
     public void OnReadyButtonClicked()
     {
         _playerNetwork.SetPlayerReady();
-        _readyButton.GetComponent<Image>().color = Color.green;
+    }
+
+    public void UpdateReadyButtonColor()
+    {
+        if (_playerNetwork.isReady.Value)
+        {
+            _readyButton.GetComponent<Image>().color = Color.green;
+        }
+        else
+        {
+            _readyButton.GetComponent<Image>().color = Color.white;
+        }
+    }
+
+    public string GetGuessInputText()
+    {
+        return _guessIF.text;
     }
 
     public void SetReadyButtonActive(bool toActive)

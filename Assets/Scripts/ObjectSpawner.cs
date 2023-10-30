@@ -62,6 +62,25 @@ public class ObjectSpawner : Singleton<ObjectSpawner>
         }
     }
 
+    public IEnumerator FreezeAllObjectsWithDelay(float delay = 3f)
+    {
+        if (_networkObjectsSpawned.Count > 0)
+        {
+            yield return new WaitForSeconds(delay);
+            FreezeAllObjects();
+        }
+    }
+
+    public void FreezeAllObjects()
+    {
+        foreach (NetworkObject obj in _networkObjectsSpawned)
+        {
+            Rigidbody rb = obj.GetComponent<Rigidbody>();
+            rb.constraints = RigidbodyConstraints.FreezePosition;
+            rb.constraints = RigidbodyConstraints.FreezeRotation;
+        }
+    }
+
     public void DestroyAllObjects()
     {
         foreach (NetworkObject obj in _networkObjectsSpawned)
