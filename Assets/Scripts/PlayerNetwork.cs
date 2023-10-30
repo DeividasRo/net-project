@@ -9,11 +9,12 @@ public class PlayerNetwork : NetworkBehaviour
     private NetworkVariable<int> _objectCount = new NetworkVariable<int>(50, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     private NetworkVariable<float> _spawnFrequency = new NetworkVariable<float>(0.1f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     private NetworkVariable<Vector2> _maxSpawnPositions = new NetworkVariable<Vector2>(new Vector2(2.8f, 2.8f), NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    private NetworkVariable<ulong> winnerId = new NetworkVariable<ulong>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     public NetworkVariable<GameState> gameState = new NetworkVariable<GameState>(GameState.Waiting, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
     public NetworkVariable<bool> isReady = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     public Dictionary<ulong, int> guessesDict = new Dictionary<ulong, int>();
-
+    private ulong _winnerId = 0;
     private int guessTime = 10;
 
     public override void OnNetworkSpawn()
@@ -42,7 +43,8 @@ public class PlayerNetwork : NetworkBehaviour
         {
             Debug.Log("Preparing the game...");
             int secondsToPrepare = 3;
-            _objectCount.Value = UnityEngine.Random.Range(80, 100);
+            _objectCount.Value = UnityEngine.Random.Range(50, 500);
+            winnerId.Value = 0;
             _spawnFrequency.Value = 0.03f;
             while (secondsToPrepare > 0)
             {
@@ -62,7 +64,7 @@ public class PlayerNetwork : NetworkBehaviour
 
             ObjectSpawner.Instance.DestroyAllObjects();
 
-            SetGameStateServerRpc(GameState.Ended);
+            SetGameStateServerRpc(GameState.GuessingEnded);
             Invoke(nameof(EvaluateGuessesServerRpc), 1f);
         }
     }
@@ -77,6 +79,22 @@ public class PlayerNetwork : NetworkBehaviour
         }
     }
 
+    private void ResetPlayer()
+    {
+        if (!IsOwner) return;
+        isReady.Value = false;
+        UIGameManager.Instance.UpdateReadyButtonColor();
+        Invoke(nameof(ResetPlayerServerRpc), 2f / NetworkManager.Singleton.NetworkTickSystem.TickRate);
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void ResetPlayerServerRpc()
+    {
+        isReady.Value = false;
+        UIGameManager.Instance.UpdateReadyButtonColor();
+        SetGameStateServerRpc(GameState.Waiting);
+    }
+
     public void SetPlayerReady()
     {
         if (!IsOwner) return;
@@ -84,7 +102,6 @@ public class PlayerNetwork : NetworkBehaviour
         UIGameManager.Instance.UpdateReadyButtonColor();
         Invoke(nameof(SetPlayerReadyServerRpc), 2f / NetworkManager.Singleton.NetworkTickSystem.TickRate);
     }
-
 
 
     [ServerRpc(RequireOwnership = false)]
@@ -120,18 +137,26 @@ public class PlayerNetwork : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     private void EvaluateGuessesServerRpc()
     {
-        ulong winnerId = 0;
         int closestGuess = 9999;
         foreach (KeyValuePair<ulong, int> guess in guessesDict)
         {
             if (closestGuess > Math.Abs(_objectCount.Value - guess.Value))
             {
-                winnerId = guess.Key;
+                _winnerId = guess.Key;
                 closestGuess = guess.Value;
             }
             Debug.Log($"Key: {guess.Key}, Value:{guess.Value}");
         }
         Debug.Log($"Winner key: {winnerId}, value:{closestGuess}");
+        winnerId.Value = _winnerId;
+        SyncWinnerIdsClientRpc(_winnerId);
+        SetGameStateServerRpc(GameState.GameEnded);
+    }
+
+    [ClientRpc]
+    private void SyncWinnerIdsClientRpc(ulong id)
+    {
+        _winnerId = id;
     }
 
 
@@ -153,38 +178,47 @@ public class PlayerNetwork : NetworkBehaviour
     [ClientRpc]
     private void UpdateGameStateClientRpc(GameState state)
     {
-        if (state == GameState.Ended)
+        if (state == GameState.GameEnded)
         {
-            Debug.Log("[Ended]");
+            Debug.Log("[GameEnded]");
+            Debug.Log(_winnerId);
+            UIGameManager.Instance.SetWinnerText(_winnerId, _objectCount.Value);
+            UIGameManager.Instance.SetWinnerTextActive(true);
+            //Invoke(nameof(ResetPlayer), 10f);
+
+        }
+        else if (state == GameState.GuessingEnded)
+        {
+            Debug.Log("[GuessingEnded]");
             UIGameManager.Instance.SetGuessInputActive(false);
-            UIGameManager.Instance.SetCountdownActive(false);
+            UIGameManager.Instance.SetCountdownTextActive(false);
             SetPlayerGuessServerRpc(NetworkManager.Singleton.LocalClientId, UIGameManager.Instance.GetGuessInputText());
         }
         else if (state == GameState.Guessing)
         {
             Debug.Log("[Guessing]");
             UIGameManager.Instance.SetGuessInputActive(true);
-            UIGameManager.Instance.SetCountdownActive(true);
+            UIGameManager.Instance.SetCountdownTextActive(true);
             StartCoroutine(ObjectSpawner.Instance.FreezeAllObjectsWithDelay(3f));
             StartCoroutine(StartCountdown(guessTime));
         }
         else if (state == GameState.Started)
         {
             Debug.Log("[Started]");
-            UIGameManager.Instance.SetCountdownActive(false);
+            UIGameManager.Instance.SetCountdownTextActive(false);
         }
         else if (state == GameState.Preparing)
         {
             Debug.Log("[Preparing]");
             UIGameManager.Instance.SetReadyButtonActive(false);
-            UIGameManager.Instance.SetCountdownActive(true);
+            UIGameManager.Instance.SetCountdownTextActive(true);
             StartCoroutine(StartCountdown(3));
         }
         else if (state == GameState.Waiting)
         {
             Debug.Log("[Waiting]");
             UIGameManager.Instance.SetReadyButtonActive(true);
-            //SetPlayerReady(false);
+            UIGameManager.Instance.SetWinnerTextActive(false);
         }
     }
 

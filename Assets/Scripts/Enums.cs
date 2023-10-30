@@ -6,5 +6,6 @@ public enum GameState
     Preparing,
     Started,
     Guessing,
-    Ended
+    GuessingEnded,
+    GameEnded
 }

@@ -85,6 +85,8 @@ public class ObjectSpawner : Singleton<ObjectSpawner>
     {
         foreach (NetworkObject obj in _networkObjectsSpawned)
         {
+            Rigidbody rb = obj.GetComponent<Rigidbody>();
+            rb.constraints = RigidbodyConstraints.None;
             NetworkObjectPool.Singleton.ReturnNetworkObject(obj, _prefab);
             if (obj.IsSpawned)
                 obj.Despawn();

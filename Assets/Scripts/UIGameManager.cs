@@ -7,9 +7,7 @@ using JetBrains.Annotations;
 public class UIGameManager : Singleton<UIGameManager>
 {
     [SerializeField]
-    private TMP_Text _codeText;
-    [SerializeField]
-    private TMP_Text _countdownText;
+    private TMP_Text _codeText, _countdownText, _winnerText;
     [SerializeField]
     private Button _readyButton;
     [SerializeField]
@@ -65,13 +63,23 @@ public class UIGameManager : Singleton<UIGameManager>
         _guessIF.gameObject.SetActive(toActive);
     }
 
-    public void SetCountdownActive(bool toActive)
+    public void SetCountdownTextActive(bool toActive)
     {
         _countdownText.gameObject.SetActive(toActive);
     }
+    public void SetWinnerTextActive(bool toActive)
+    {
+        _winnerText.gameObject.SetActive(toActive);
+    }
+
 
     public void SetCountdownText(string countdownText)
     {
         _countdownText.text = countdownText;
+    }
+
+    public void SetWinnerText(ulong winnerId, int answer)
+    {
+        _winnerText.text = $"Player {winnerId} won the game! [{answer}]";
     }
 }
