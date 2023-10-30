@@ -65,13 +65,12 @@ public class PlayerNetwork : NetworkBehaviour
             ObjectSpawner.Instance.DestroyAllObjects();
 
             SetGameStateServerRpc(GameState.GuessingEnded);
-            Invoke(nameof(EvaluateGuessesServerRpc), 1f);
+            Invoke(nameof(EvaluateGuessesServerRpc), 2f / NetworkManager.Singleton.NetworkTickSystem.TickRate);
         }
     }
 
     private IEnumerator StartCountdown(int countdownTime)
     {
-        Debug.Log("Guessing started");
         for (int i = countdownTime; i > 0; i--)
         {
             UIGameManager.Instance.SetCountdownText(i.ToString());
@@ -81,8 +80,7 @@ public class PlayerNetwork : NetworkBehaviour
 
     private void ResetPlayer()
     {
-        if (!IsLocalPlayer) return;
-        Debug.Log(isReady);
+        if (!IsOwner) return;
         isReady.Value = false;
         Invoke(nameof(ResetPlayerServerRpc), 2f / NetworkManager.Singleton.NetworkTickSystem.TickRate);
     }
@@ -128,7 +126,6 @@ public class PlayerNetwork : NetworkBehaviour
         }
         else
         {
-            Debug.Log(guessString);
             guessesDict[clientId] = Int16.Parse(guessString);
         }
     }
@@ -221,6 +218,7 @@ public class PlayerNetwork : NetworkBehaviour
             Debug.Log(isReady.Value);
             UIGameManager.Instance.SetReadyButtonActive(true);
             UIGameManager.Instance.SetWinnerTextActive(false);
+            UIGameManager.Instance.ResetGuessInputText();
             UIGameManager.Instance.UpdateReadyButtonColorByReadyState(isReady.Value);
         }
     }

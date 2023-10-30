@@ -52,6 +52,10 @@ public class UIGameManager : Singleton<UIGameManager>
     {
         return _guessIF.text;
     }
+    public void ResetGuessInputText()
+    {
+        _guessIF.text = "";
+    }
 
     public void SetReadyButtonActive(bool toActive)
     {
@@ -80,6 +84,6 @@ public class UIGameManager : Singleton<UIGameManager>
 
     public void SetWinnerText(ulong winnerId, int answer)
     {
-        _winnerText.text = $"Player {winnerId} won the game! [{answer}]";
+        _winnerText.text = $"Player {winnerId} won the game!";
     }
 }

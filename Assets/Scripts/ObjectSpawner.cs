@@ -53,11 +53,9 @@ public class ObjectSpawner : Singleton<ObjectSpawner>
         NetworkObject obj = NetworkObjectPool.Singleton.GetNetworkObject(_prefab, new Vector3(Random.Range(-_maxPosX, _maxPosX), 8, Random.Range(-_maxPosZ, _maxPosZ)), Quaternion.identity);
 
         obj.GetComponent<Transform>().localScale = new Vector3(_objectSize, _objectSize, _objectSize);
-
-
         if (!obj.IsSpawned)
         {
-            obj.Spawn(destroyWithScene: true);
+            obj.Spawn();
             _networkObjectsSpawned.Add(obj);
         }
     }
@@ -89,8 +87,10 @@ public class ObjectSpawner : Singleton<ObjectSpawner>
             rb.constraints = RigidbodyConstraints.None;
             NetworkObjectPool.Singleton.ReturnNetworkObject(obj, _prefab);
             if (obj.IsSpawned)
-                obj.Despawn(false);
+                obj.Despawn();
         }
+        _networkObjectsSpawned.Clear();
+        _objectsSpawnedCount = 0;
     }
 
 }
