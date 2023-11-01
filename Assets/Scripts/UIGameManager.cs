@@ -82,8 +82,8 @@ public class UIGameManager : Singleton<UIGameManager>
         _countdownText.text = countdownText;
     }
 
-    public void SetWinnerText(ulong winnerId, int answer)
+    public void SetCorrectAnswerText(int answer)
     {
-        _winnerText.text = $"Player {winnerId} won the game!";
+        _winnerText.text = $"CORRECT ANSWER\n{answer}";
     }
 }

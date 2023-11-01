@@ -16,6 +16,7 @@ public class PlayerNetwork : NetworkBehaviour
     public Dictionary<ulong, int> guessesDict = new Dictionary<ulong, int>();
     private ulong _winnerId = 0;
     private int _guessTime = 5;
+    private int _playerCount = 0;
 
     public override void OnNetworkSpawn()
     {
@@ -24,6 +25,7 @@ public class PlayerNetwork : NetworkBehaviour
         if (IsHost)
         {
             NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
+            _playerCount = NetworkManager.Singleton.GetComponent<Relay>().maxConnections;
         }
     }
 
@@ -65,7 +67,6 @@ public class PlayerNetwork : NetworkBehaviour
             ObjectSpawner.Instance.DestroyAllObjects();
 
             SetGameStateServerRpc(GameState.GuessingEnded);
-            Invoke(nameof(EvaluateGuessesServerRpc), 2f / NetworkManager.Singleton.NetworkTickSystem.TickRate);
         }
     }
 
@@ -82,6 +83,7 @@ public class PlayerNetwork : NetworkBehaviour
     {
         if (!IsOwner) return;
         isReady.Value = false;
+        guessesDict.Clear();
         Invoke(nameof(ResetPlayerServerRpc), 2f / NetworkManager.Singleton.NetworkTickSystem.TickRate);
     }
 
@@ -97,12 +99,26 @@ public class PlayerNetwork : NetworkBehaviour
         if (!IsOwner) return;
         isReady.Value = true;
         UIGameManager.Instance.UpdateReadyButtonColorByReadyState(isReady.Value);
-        Invoke(nameof(SetPlayerReadyServerRpc), 2f / NetworkManager.Singleton.NetworkTickSystem.TickRate);
+        Invoke(nameof(EvaluateReadinessServerRpc), 2f / NetworkManager.Singleton.NetworkTickSystem.TickRate);
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void SetPlayerGuessServerRpc(ulong clientId, string guessString)
+    {
+        if (guessString == String.Empty)
+        {
+            guessesDict[clientId] = 0;
+        }
+        else
+        {
+            guessesDict[clientId] = Int16.Parse(guessString);
+        }
+        Invoke(nameof(EvaluateGuessesServerRpc), 2f / NetworkManager.Singleton.NetworkTickSystem.TickRate);
     }
 
 
     [ServerRpc(RequireOwnership = false)]
-    public void SetPlayerReadyServerRpc()
+    public void EvaluateReadinessServerRpc()
     {
         foreach (NetworkClient networkClient in NetworkManager.Singleton.ConnectedClientsList)
         {
@@ -118,31 +134,18 @@ public class PlayerNetwork : NetworkBehaviour
     }
 
     [ServerRpc(RequireOwnership = false)]
-    private void SetPlayerGuessServerRpc(ulong clientId, string guessString)
-    {
-        if (guessString == String.Empty)
-        {
-            guessesDict[clientId] = 0;
-        }
-        else
-        {
-            guessesDict[clientId] = Int16.Parse(guessString);
-        }
-    }
-
-    [ServerRpc(RequireOwnership = false)]
     private void EvaluateGuessesServerRpc()
     {
+        if (guessesDict.Count < NetworkManager.Singleton.ConnectedClientsList.Count) return;
         int closestGuess = 0;
         int closestGuessDistance = 9999;
         foreach (KeyValuePair<ulong, int> guess in guessesDict)
         {
-
             if (closestGuessDistance > Math.Abs(objectCount.Value - guess.Value))
             {
                 _winnerId = guess.Key;
                 closestGuess = guess.Value;
-                closestGuessDistance = objectCount.Value - guess.Value;
+                closestGuessDistance = Math.Abs(objectCount.Value - guess.Value);
             }
             Debug.Log($"Key: {guess.Key}, Value:{guess.Value}");
         }
@@ -180,7 +183,7 @@ public class PlayerNetwork : NetworkBehaviour
         if (state == GameState.GameEnded)
         {
             Debug.Log("[GameEnded]");
-            UIGameManager.Instance.SetWinnerText(_winnerId, objectCount.Value);
+            UIGameManager.Instance.SetCorrectAnswerText(objectCount.Value);
             UIGameManager.Instance.SetWinnerTextActive(true);
             Invoke(nameof(ResetPlayer), 5f);
 
@@ -215,7 +218,6 @@ public class PlayerNetwork : NetworkBehaviour
         else if (state == GameState.Waiting)
         {
             Debug.Log("[Waiting]");
-            Debug.Log(isReady.Value);
             UIGameManager.Instance.SetReadyButtonActive(true);
             UIGameManager.Instance.SetWinnerTextActive(false);
             UIGameManager.Instance.ResetGuessInputText();
