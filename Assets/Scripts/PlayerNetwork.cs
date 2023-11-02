@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using System.Net.WebSockets;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -14,29 +16,82 @@ public class PlayerNetwork : NetworkBehaviour
 
     public NetworkVariable<bool> isReady = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     public Dictionary<ulong, int> guessesDict = new Dictionary<ulong, int>();
-    private ulong _winnerId = 0;
+    public Dictionary<ulong, int> sortedResultsDict = new Dictionary<ulong, int>();
     private int _guessTime = 5;
-    private int _playerCount = 0;
+    private bool _spawned = false;
 
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
-        if (!IsOwner) return;
+        if (_spawned) return;
         if (IsHost)
         {
             NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
-            _playerCount = NetworkManager.Singleton.GetComponent<Relay>().maxConnections;
         }
+        gameState.OnValueChanged += OnGameStateValueChanged;
+        _spawned = true;
     }
 
     public override void OnNetworkDespawn()
     {
         base.OnNetworkDespawn();
+        gameState.OnValueChanged -= OnGameStateValueChanged;
     }
 
     private void OnClientConnected(ulong clientId)
     {
         Debug.Log($"Client {clientId} connected");
+    }
+
+    private void OnGameStateValueChanged(GameState prev, GameState curr)
+    {
+        Debug.Log(gameState.Value);
+        if (curr == GameState.GameEnded)
+        {
+            Debug.Log("[GameEnded]");
+            UIGameManager.Instance.SetCorrectAnswerText(objectCount.Value);
+            UIGameManager.Instance.SetCorrectAnswerTextActive(true);
+            UIGameManager.Instance.SetRoundScoresText(sortedResultsDict);
+            UIGameManager.Instance.SetRoundScoresTextActive(true);
+            Invoke(nameof(ResetPlayer), 7f);
+
+        }
+        else if (curr == GameState.GuessingEnded)
+        {
+            Debug.Log("[GuessingEnded]");
+            UIGameManager.Instance.SetGuessInputActive(false);
+            UIGameManager.Instance.SetCountdownTextActive(false);
+            SetPlayerGuessServerRpc(NetworkManager.Singleton.LocalClientId, UIGameManager.Instance.GetGuessInputText());
+        }
+        else if (curr == GameState.Guessing)
+        {
+            Debug.Log("[Guessing]");
+            UIGameManager.Instance.SetGuessInputActive(true);
+            UIGameManager.Instance.SetCountdownTextActive(true);
+            StartCoroutine(ObjectSpawner.Instance.FreezeAllObjectsWithDelay(3f));
+            StartCoroutine(StartCountdown(_guessTime));
+        }
+        else if (curr == GameState.Started)
+        {
+            Debug.Log("[Started]");
+            UIGameManager.Instance.SetCountdownTextActive(false);
+        }
+        else if (curr == GameState.Preparing)
+        {
+            Debug.Log("[Preparing]");
+            UIGameManager.Instance.SetReadyButtonActive(false);
+            UIGameManager.Instance.SetCountdownTextActive(true);
+            StartCoroutine(StartCountdown(3));
+        }
+        else if (curr == GameState.Waiting)
+        {
+            Debug.Log("[Waiting]");
+            UIGameManager.Instance.SetReadyButtonActive(true);
+            UIGameManager.Instance.SetCorrectAnswerTextActive(false);
+            UIGameManager.Instance.ResetGuessInputText();
+            UIGameManager.Instance.UpdateReadyButtonColorByReadyState(isReady.Value);
+            UIGameManager.Instance.SetRoundScoresTextActive(false);
+        }
     }
 
     private IEnumerator StartGameProcess()
@@ -82,6 +137,7 @@ public class PlayerNetwork : NetworkBehaviour
     private void ResetPlayer()
     {
         if (!IsOwner) return;
+        if (isReady.Value == false) return;
         isReady.Value = false;
         guessesDict.Clear();
         Invoke(nameof(ResetPlayerServerRpc), 2f / NetworkManager.Singleton.NetworkTickSystem.TickRate);
@@ -137,28 +193,35 @@ public class PlayerNetwork : NetworkBehaviour
     private void EvaluateGuessesServerRpc()
     {
         if (guessesDict.Count < NetworkManager.Singleton.ConnectedClientsList.Count) return;
-        int closestGuess = 0;
-        int closestGuessDistance = 9999;
+        Dictionary<ulong, int> resultsDict = new Dictionary<ulong, int>();
         foreach (KeyValuePair<ulong, int> guess in guessesDict)
         {
-            if (closestGuessDistance > Math.Abs(objectCount.Value - guess.Value))
-            {
-                _winnerId = guess.Key;
-                closestGuess = guess.Value;
-                closestGuessDistance = Math.Abs(objectCount.Value - guess.Value);
-            }
+            resultsDict[guess.Key] = Math.Abs(objectCount.Value - guess.Value);
             Debug.Log($"Key: {guess.Key}, Value:{guess.Value}");
         }
-        Debug.Log($"Winner key: {_winnerId}, value:{closestGuess}");
-        winnerId.Value = _winnerId;
-        SyncWinnerIdsClientRpc(_winnerId);
+        sortedResultsDict = resultsDict.OrderBy(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
+
+        ulong[] clientIds = new ulong[sortedResultsDict.Count];
+        int[] values = new int[sortedResultsDict.Count];
+        int idx = 0;
+        foreach (KeyValuePair<ulong, int> result in sortedResultsDict)
+        {
+            clientIds[idx] = result.Key;
+            values[idx] = result.Value;
+            idx++;
+        }
+
+        SyncResultsDictClientRpc(clientIds, values);
         SetGameStateServerRpc(GameState.GameEnded);
     }
 
     [ClientRpc]
-    private void SyncWinnerIdsClientRpc(ulong id)
+    private void SyncResultsDictClientRpc(ulong[] clientIds, int[] values)
     {
-        _winnerId = id;
+        if (sortedResultsDict.Count != 0) return;
+        Debug.Log(NetworkManager.Singleton.LocalClientId);
+        for (int i = 0; i < clientIds.Length; i++)
+            sortedResultsDict.Add(clientIds[i], values[i]);
     }
 
 
@@ -174,55 +237,6 @@ public class PlayerNetwork : NetworkBehaviour
     private void SetGameStateServerRpc(GameState state)
     {
         gameState.Value = state;
-        UpdateGameStateClientRpc(state);
-    }
-
-    [ClientRpc]
-    private void UpdateGameStateClientRpc(GameState state)
-    {
-        if (state == GameState.GameEnded)
-        {
-            Debug.Log("[GameEnded]");
-            UIGameManager.Instance.SetCorrectAnswerText(objectCount.Value);
-            UIGameManager.Instance.SetWinnerTextActive(true);
-            Invoke(nameof(ResetPlayer), 5f);
-
-        }
-        else if (state == GameState.GuessingEnded)
-        {
-            Debug.Log("[GuessingEnded]");
-            UIGameManager.Instance.SetGuessInputActive(false);
-            UIGameManager.Instance.SetCountdownTextActive(false);
-            SetPlayerGuessServerRpc(NetworkManager.Singleton.LocalClientId, UIGameManager.Instance.GetGuessInputText());
-        }
-        else if (state == GameState.Guessing)
-        {
-            Debug.Log("[Guessing]");
-            UIGameManager.Instance.SetGuessInputActive(true);
-            UIGameManager.Instance.SetCountdownTextActive(true);
-            StartCoroutine(ObjectSpawner.Instance.FreezeAllObjectsWithDelay(3f));
-            StartCoroutine(StartCountdown(_guessTime));
-        }
-        else if (state == GameState.Started)
-        {
-            Debug.Log("[Started]");
-            UIGameManager.Instance.SetCountdownTextActive(false);
-        }
-        else if (state == GameState.Preparing)
-        {
-            Debug.Log("[Preparing]");
-            UIGameManager.Instance.SetReadyButtonActive(false);
-            UIGameManager.Instance.SetCountdownTextActive(true);
-            StartCoroutine(StartCountdown(3));
-        }
-        else if (state == GameState.Waiting)
-        {
-            Debug.Log("[Waiting]");
-            UIGameManager.Instance.SetReadyButtonActive(true);
-            UIGameManager.Instance.SetWinnerTextActive(false);
-            UIGameManager.Instance.ResetGuessInputText();
-            UIGameManager.Instance.UpdateReadyButtonColorByReadyState(isReady.Value);
-        }
     }
 
 }

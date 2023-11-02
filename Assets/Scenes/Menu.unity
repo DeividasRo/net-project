@@ -665,7 +665,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9f250bc513373a8488c6fc10e39e03d8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxConnections: 2
+  maxConnections: 3
   joinCode: 
 --- !u!114 &298878511
 MonoBehaviour:

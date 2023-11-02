@@ -3,11 +3,12 @@ using TMPro;
 using Unity.Netcode;
 using UnityEngine.UI;
 using JetBrains.Annotations;
+using System.Collections.Generic;
 
 public class UIGameManager : Singleton<UIGameManager>
 {
     [SerializeField]
-    private TMP_Text _codeText, _countdownText, _winnerText;
+    private TMP_Text _codeText, _countdownText, _correctAnswerText, _resultsText;
     [SerializeField]
     private Button _readyButton;
     [SerializeField]
@@ -71,19 +72,32 @@ public class UIGameManager : Singleton<UIGameManager>
     {
         _countdownText.gameObject.SetActive(toActive);
     }
-    public void SetWinnerTextActive(bool toActive)
+    public void SetCorrectAnswerTextActive(bool toActive)
     {
-        _winnerText.gameObject.SetActive(toActive);
+        _correctAnswerText.gameObject.SetActive(toActive);
     }
 
+    public void SetRoundScoresTextActive(bool toActive)
+    {
+        _resultsText.gameObject.SetActive(toActive);
+    }
 
     public void SetCountdownText(string countdownText)
     {
         _countdownText.text = countdownText;
     }
 
+    public void SetRoundScoresText(Dictionary<ulong, int> resultsDict)
+    {
+        _resultsText.text = "";
+        foreach (KeyValuePair<ulong, int> result in resultsDict)
+        {
+            _resultsText.text += $"{result.Key} - {result.Value}\n";
+        }
+    }
+
     public void SetCorrectAnswerText(int answer)
     {
-        _winnerText.text = $"CORRECT ANSWER\n{answer}";
+        _correctAnswerText.text = $"CORRECT ANSWER\n{answer}";
     }
 }

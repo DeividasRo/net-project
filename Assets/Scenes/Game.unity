@@ -662,7 +662,7 @@ GameObject:
   - component: {fileID: 476894691}
   - component: {fileID: 476894690}
   m_Layer: 5
-  m_Name: RoundScoresText
+  m_Name: RoundResultsText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -707,11 +707,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Player 0 - 40
-
-    Player 1 - 59
-
-    Player 2 - 128'
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -2232,7 +2228,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _codeText: {fileID: 2129210079}
   _countdownText: {fileID: 964694495}
-  _winnerText: {fileID: 637307151}
+  _correctAnswerText: {fileID: 637307151}
+  _resultsText: {fileID: 476894690}
   _readyButton: {fileID: 1890173025}
   _guessIF: {fileID: 556630908}
 --- !u!4 &2087774963
