@@ -16,8 +16,9 @@ GameObject:
   - component: {fileID: 2724730002386531262}
   - component: {fileID: -5373049004794579095}
   - component: {fileID: 9156382012349049813}
+  - component: {fileID: 96112024637172778}
   m_Layer: 0
-  m_Name: Ball
+  m_Name: FallingObject
   m_TagString: FallingObject
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -171,15 +172,15 @@ MonoBehaviour:
   SyncPositionX: 1
   SyncPositionY: 1
   SyncPositionZ: 1
-  SyncRotAngleX: 0
-  SyncRotAngleY: 0
-  SyncRotAngleZ: 0
+  SyncRotAngleX: 1
+  SyncRotAngleY: 1
+  SyncRotAngleZ: 1
   SyncScaleX: 1
   SyncScaleY: 1
   SyncScaleZ: 1
   PositionThreshold: 0.01
-  RotAngleThreshold: 0.01
-  ScaleThreshold: 0.01
+  RotAngleThreshold: 0.02
+  ScaleThreshold: 0.2
   UseQuaternionSynchronization: 0
   UseQuaternionCompression: 0
   UseHalfFloatPrecision: 0
@@ -198,3 +199,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f6c0be61502bb534f922ebb746851216, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &96112024637172778
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7791357225105902622}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 345a4860384f64042a501c5b81cfce53, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  meshes:
+  - {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+  - {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}

@@ -2559,6 +2559,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _prefab: {fileID: 7791357225105902622, guid: 760c4ad57267fe142856bdb16c4597aa, type: 3}
   _objectSize: 0.5
+  meshes:
+  - {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+  - {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!4 &7902111852807881951
 Transform:
   m_ObjectHideFlags: 0

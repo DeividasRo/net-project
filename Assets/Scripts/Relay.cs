@@ -10,7 +10,6 @@ using UnityEngine.SceneManagement;
 
 public class Relay : MonoBehaviour
 {
-    [HideInInspector]
     public int maxConnections = 2;
     [HideInInspector]
     public string joinCode = "";

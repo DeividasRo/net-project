@@ -1,6 +1,7 @@
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
+using System.Linq;
 
 public class UIMenuManager : MonoBehaviour
 {
@@ -15,7 +16,7 @@ public class UIMenuManager : MonoBehaviour
 
     private void Update()
     {
-        if (_joinInputText.text.Length != _joinCodeIF.characterLimit + 1)
+        if (_joinInputText.text.Length != _joinCodeIF.characterLimit + 1 && !_joinInputText.text.All(char.IsLetterOrDigit))
         {
             _joinButton.interactable = false;
         }
