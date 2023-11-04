@@ -12,11 +12,10 @@ public class PlayerNetwork : NetworkBehaviour
     private NetworkVariable<float> spawnFrequency = new NetworkVariable<float>(0.1f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     private NetworkVariable<Vector2> maxSpawnPositions = new NetworkVariable<Vector2>(new Vector2(2.8f, 2.8f), NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     public NetworkVariable<GameState> gameState = new NetworkVariable<GameState>(GameState.Waiting, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
-    public NetworkList<ulong> readyClientIds = new NetworkList<ulong>(null, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    public NetworkVariable<bool> isReady = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     public Dictionary<ulong, int> guessesDict = new Dictionary<ulong, int>();
     public Dictionary<ulong, int> sortedResultsDict = new Dictionary<ulong, int>();
     private int _guessTime = 5;
-    private bool _isReady = false;
 
     public override void OnNetworkSpawn()
     {
@@ -26,7 +25,18 @@ public class PlayerNetwork : NetworkBehaviour
             NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
         }
         gameState.OnValueChanged += OnGameStateValueChanged;
-        readyClientIds.OnListChanged += OnReadyClientIdsValueChanged;
+        isReady.OnValueChanged += OnIsReadyValueChanged;
+    }
+
+    private void OnIsReadyValueChanged(bool prev, bool curr)
+    {
+        // Network variable synced across clients, not owned by player object
+        Debug.Log($"{prev}, {curr}");
+        if (curr == false)
+        {
+            guessesDict.Clear();
+            GameResetServerRpc();
+        }
     }
 
     public override void OnNetworkDespawn()
@@ -42,7 +52,7 @@ public class PlayerNetwork : NetworkBehaviour
 
     private void OnGameStateValueChanged(GameState prev, GameState curr)
     {
-        Debug.Log(gameState.Value);
+        //Debug.Log($"{prev}, {curr}");
         if (curr == GameState.GameEnded)
         {
             Debug.Log("[GameEnded]");
@@ -50,12 +60,11 @@ public class PlayerNetwork : NetworkBehaviour
             UIGameManager.Instance.SetCorrectAnswerTextActive(true);
             UIGameManager.Instance.SetRoundScoresText(sortedResultsDict);
             UIGameManager.Instance.SetRoundScoresTextActive(true);
-            Invoke(nameof(ResetPlayer), 5f);
+            ResetPlayerServerRpc();
         }
         else if (curr == GameState.GuessingEnded)
         {
             Debug.Log("[GuessingEnded]");
-            Debug.Log($"{_isReady} - {NetworkManager.Singleton.LocalClientId}");
             UIGameManager.Instance.SetGuessInputActive(false);
             UIGameManager.Instance.SetCountdownTextActive(false);
             SetPlayerGuessServerRpc(NetworkManager.Singleton.LocalClientId, UIGameManager.Instance.GetGuessInputText());
@@ -63,7 +72,6 @@ public class PlayerNetwork : NetworkBehaviour
         else if (curr == GameState.Guessing)
         {
             Debug.Log("[Guessing]");
-            Debug.Log($"{_isReady} - {NetworkManager.Singleton.LocalClientId}");
             UIGameManager.Instance.SetGuessInputActive(true);
             UIGameManager.Instance.SetCountdownTextActive(true);
             StartCoroutine(ObjectSpawner.Instance.FreezeAllObjectsWithDelay(3f));
@@ -72,13 +80,11 @@ public class PlayerNetwork : NetworkBehaviour
         else if (curr == GameState.Started)
         {
             Debug.Log("[Started]");
-            Debug.Log($"{_isReady} - {NetworkManager.Singleton.LocalClientId}");
             UIGameManager.Instance.SetCountdownTextActive(false);
         }
         else if (curr == GameState.Preparing)
         {
             Debug.Log("[Preparing]");
-            Debug.Log($"{_isReady} - {NetworkManager.Singleton.LocalClientId}");
             UIGameManager.Instance.SetReadyButtonActive(false);
             UIGameManager.Instance.SetCountdownTextActive(true);
             StartCoroutine(StartCountdown(3));
@@ -89,15 +95,9 @@ public class PlayerNetwork : NetworkBehaviour
             UIGameManager.Instance.SetReadyButtonActive(true);
             UIGameManager.Instance.SetCorrectAnswerTextActive(false);
             UIGameManager.Instance.ResetGuessInputText();
-            UIGameManager.Instance.UpdateReadyButtonColorByReadyState(_isReady);
+            UIGameManager.Instance.UpdateReadyButtonColorByReadyState(false);
             UIGameManager.Instance.SetRoundScoresTextActive(false);
         }
-    }
-
-    private void OnReadyClientIdsValueChanged(NetworkListEvent<ulong> changeEvent)
-    {
-        Debug.Log(changeEvent.PreviousValue);
-        Debug.Log(readyClientIds.Count);
     }
 
     private IEnumerator StartGameProcess()
@@ -139,48 +139,42 @@ public class PlayerNetwork : NetworkBehaviour
         }
     }
 
-    private void ResetPlayer()
+    [ServerRpc(RequireOwnership = false)]
+    private void ResetPlayerServerRpc(ServerRpcParams serverRpcParams = default)
     {
-        Debug.Log($"{_isReady} - {NetworkManager.Singleton.LocalClientId}");
-        if (_isReady == false) return;
-        _isReady = false;
-        guessesDict.Clear();
-        ResetPlayerServerRpc(NetworkManager.Singleton.LocalClientId);
+        if (!isReady.Value) return;
+        var clientId = serverRpcParams.Receive.SenderClientId;
+        Debug.Log($"isReady: {isReady.Value}, clientId: {clientId}");
+        NetworkManager.Singleton.ConnectedClients[clientId].PlayerObject.GetComponent<PlayerNetwork>().isReady.Value = false;
     }
 
     [ServerRpc(RequireOwnership = false)]
-    private void ResetPlayerServerRpc(ulong clientId)
+    private void GameResetServerRpc()
     {
-        readyClientIds.Remove(clientId);
-        Debug.Log(readyClientIds.Count);
-        if (readyClientIds.Count == 0)
-            SetGameStateServerRpc(GameState.Waiting);
+        foreach (NetworkClient networkClient in NetworkManager.Singleton.ConnectedClientsList)
+            if (networkClient.PlayerObject.GetComponent<PlayerNetwork>().isReady.Value) return;
+        SetGameStateServerRpc(GameState.Waiting);
     }
 
     public void SetPlayerReady()
     {
         if (!IsOwner) return;
-        if (_isReady) return;
-        _isReady = true;
-        UIGameManager.Instance.UpdateReadyButtonColorByReadyState(_isReady);
-        SetPlayerReadyServerRpc(NetworkManager.Singleton.LocalClientId);
+        UIGameManager.Instance.UpdateReadyButtonColorByReadyState(true);
+        SetPlayerReadyServerRpc();
     }
 
-    [ServerRpc]
-    private void SetPlayerReadyServerRpc(ulong clientId)
+    [ServerRpc(RequireOwnership = false)]
+    private void SetPlayerReadyServerRpc()
     {
-        readyClientIds.Add(clientId);
+        isReady.Value = true;
+        foreach (NetworkClient networkClient in NetworkManager.Singleton.ConnectedClientsList)
+            if (!networkClient.PlayerObject.GetComponent<PlayerNetwork>().isReady.Value) return;
         EvaluateReadinessServerRpc();
     }
 
     [ServerRpc(RequireOwnership = false)]
     public void EvaluateReadinessServerRpc()
     {
-        Debug.Log(readyClientIds.Count);
-        foreach (NetworkClient networkClient in NetworkManager.Singleton.ConnectedClientsList)
-        {
-            if (!readyClientIds.Contains(networkClient.ClientId)) return;
-        }
         if (NetworkManager.Singleton.ConnectedClientsList.Count != NetworkManager.Singleton.GetComponent<Relay>().maxConnections)
         {
             return;
@@ -202,9 +196,6 @@ public class PlayerNetwork : NetworkBehaviour
         }
         Invoke(nameof(EvaluateGuessesServerRpc), 2f / NetworkManager.Singleton.NetworkTickSystem.TickRate);
     }
-
-
-
 
     [ServerRpc(RequireOwnership = false)]
     private void EvaluateGuessesServerRpc()
@@ -252,7 +243,8 @@ public class PlayerNetwork : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     private void SetGameStateServerRpc(GameState state)
     {
-        gameState.Value = state;
+        if (gameState.Value != state)
+            gameState.Value = state;
     }
 
 }
