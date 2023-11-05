@@ -243,7 +243,7 @@ public class PlayerNetwork : NetworkBehaviour
     [ClientRpc]
     private void SyncResultsDictClientRpc(ulong[] clientIds, int[] values)
     {
-        if (sortedResultsDict.Count != 0) return;
+        sortedResultsDict.Clear();
         for (int i = 0; i < clientIds.Length; i++)
             sortedResultsDict.Add(clientIds[i], values[i]);
     }
