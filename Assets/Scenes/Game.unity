@@ -734,8 +734,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 40
-  m_fontSizeBase: 40
+  m_fontSize: 46
+  m_fontSizeBase: 46
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -2559,9 +2559,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _prefab: {fileID: 7791357225105902622, guid: 760c4ad57267fe142856bdb16c4597aa, type: 3}
   _objectSize: 0.5
-  meshes:
-  - {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
-  - {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+  objectTypeId:
+    m_InternalValue: 0
 --- !u!4 &7902111852807881951
 Transform:
   m_ObjectHideFlags: 0

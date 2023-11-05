@@ -106,7 +106,7 @@ public class PlayerNetwork : NetworkBehaviour
         {
             Debug.Log("Preparing the game...");
             int secondsToPrepare = 3;
-            objectCount.Value = UnityEngine.Random.Range(50, 200);
+            objectCount.Value = UnityEngine.Random.Range(50, 300);
             spawnFrequency.Value = 0.03f;
             while (secondsToPrepare > 0)
             {
@@ -142,8 +142,9 @@ public class PlayerNetwork : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     private void ResetPlayerServerRpc(ServerRpcParams serverRpcParams = default)
     {
-        if (!isReady.Value) return;
         var clientId = serverRpcParams.Receive.SenderClientId;
+        bool isClientReady = NetworkManager.Singleton.ConnectedClients[clientId].PlayerObject.GetComponent<PlayerNetwork>().isReady.Value;
+        if (!isClientReady) return;
         Debug.Log($"isReady: {isReady.Value}, clientId: {clientId}");
         NetworkManager.Singleton.ConnectedClients[clientId].PlayerObject.GetComponent<PlayerNetwork>().isReady.Value = false;
     }
@@ -152,8 +153,11 @@ public class PlayerNetwork : NetworkBehaviour
     private void GameResetServerRpc()
     {
         foreach (NetworkClient networkClient in NetworkManager.Singleton.ConnectedClientsList)
+        {
+            Debug.Log($"GR {networkClient.ClientId} - {networkClient.PlayerObject.GetComponent<PlayerNetwork>().isReady.Value}");
             if (networkClient.PlayerObject.GetComponent<PlayerNetwork>().isReady.Value) return;
-        StartCoroutine(ResetGame(6));
+        }
+        StartCoroutine(ResetGame(8));
     }
 
     private IEnumerator ResetGame(int delay = 0)
