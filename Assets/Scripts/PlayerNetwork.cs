@@ -153,7 +153,20 @@ public class PlayerNetwork : NetworkBehaviour
     {
         foreach (NetworkClient networkClient in NetworkManager.Singleton.ConnectedClientsList)
             if (networkClient.PlayerObject.GetComponent<PlayerNetwork>().isReady.Value) return;
-        SetGameStateServerRpc(GameState.Waiting);
+        StartCoroutine(ResetGame(6));
+    }
+
+    private IEnumerator ResetGame(int delay = 0)
+    {
+        if (IsServer)
+        {
+            while (delay > 0)
+            {
+                delay--;
+                yield return new WaitForSeconds(1f);
+            }
+            SetGameStateServerRpc(GameState.Waiting);
+        }
     }
 
     public void SetPlayerReady()
