@@ -15,7 +15,7 @@ public class PlayerNetwork : NetworkBehaviour
     public NetworkVariable<bool> isReady = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     public Dictionary<ulong, int> guessesDict = new Dictionary<ulong, int>();
     public Dictionary<ulong, int> sortedResultsDict = new Dictionary<ulong, int>();
-    private int _guessTime = 5;
+    private int _guessTime = 10;
 
     public override void OnNetworkSpawn()
     {
@@ -106,7 +106,7 @@ public class PlayerNetwork : NetworkBehaviour
         {
             Debug.Log("Preparing the game...");
             int secondsToPrepare = 3;
-            objectCount.Value = UnityEngine.Random.Range(50, 90);
+            objectCount.Value = UnityEngine.Random.Range(50, 200);
             spawnFrequency.Value = 0.03f;
             while (secondsToPrepare > 0)
             {
