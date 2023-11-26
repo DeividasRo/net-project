@@ -9,9 +9,8 @@ public class ObjectSpawner : NetworkSingleton<ObjectSpawner>
     private GameObject _prefab;
     [Range(0, 2)]
     private float _objectSize;
-    public NetworkVariable<int> objectTypeId = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    public NetworkVariable<int> objectMeshId = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     public NetworkVariable<int> objectColorId = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
-    public Material material;
     private List<NetworkObject> _networkObjectsSpawned { get; set; }
     private int _objectCount;
     private float _spawnFrequency;
@@ -32,9 +31,8 @@ public class ObjectSpawner : NetworkSingleton<ObjectSpawner>
 
     public void StartSpawning(int objectCount, float objectSize, float spawnFrequency, Vector2 maxSpawnPositions)
     {
-        objectTypeId.Value = Random.Range(0, 2);
+        objectMeshId.Value = Random.Range(0, 2);
         objectColorId.Value = Random.Range(0, 3);
-        Debug.Log(objectTypeId.Value);
         _objectSize = objectSize;
         _objectCount = objectCount;
         _spawnFrequency = spawnFrequency;
@@ -55,7 +53,7 @@ public class ObjectSpawner : NetworkSingleton<ObjectSpawner>
 
     private void SpawnObject()
     {
-        NetworkObject obj = NetworkObjectPool.Singleton.GetNetworkObject(_prefab, new Vector3(Random.Range(-_maxPosX, _maxPosX), 8, Random.Range(-_maxPosZ, _maxPosZ)), Quaternion.identity);
+        NetworkObject obj = NetworkObjectPool.Singleton.GetNetworkObject(_prefab, new Vector3(Random.Range(-_maxPosX, _maxPosX), 15, Random.Range(-_maxPosZ, _maxPosZ)), Quaternion.identity);
 
         obj.GetComponent<Transform>().localScale = new Vector3(_objectSize, _objectSize, _objectSize);
         if (!obj.IsSpawned)

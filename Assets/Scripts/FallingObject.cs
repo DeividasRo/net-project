@@ -6,6 +6,8 @@ public class FallingObject : NetworkBehaviour
 {
     public Mesh[] meshes;
     public Material[] materials;
+    private int _objectMeshId = 0;
+    private int _objectColorId = 0;
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
@@ -14,19 +16,24 @@ public class FallingObject : NetworkBehaviour
 
     private void ModifyObjectType()
     {
-        int objectTypeId = ObjectSpawner.Instance.objectTypeId.Value;
-        int objectColorId = ObjectSpawner.Instance.objectColorId.Value;
+        _objectMeshId = ObjectSpawner.Instance.objectMeshId.Value;
+        _objectColorId = ObjectSpawner.Instance.objectColorId.Value;
         Destroy(GetComponent<Collider>());
-        GetComponent<MeshFilter>().mesh = meshes[objectTypeId];
-        GetComponent<MeshRenderer>().material = materials[objectColorId];
-        if (objectTypeId == 0)
+        GetComponent<MeshFilter>().mesh = meshes[_objectMeshId];
+        GetComponent<MeshRenderer>().material = materials[_objectColorId];
+        Invoke(nameof(AddCollider), 1f);
+
+    }
+
+    private void AddCollider()
+    {
+        if (_objectMeshId == 0)
         {
             this.AddComponent<BoxCollider>();
         }
-        else if (objectTypeId == 1)
+        else if (_objectMeshId == 1)
         {
             this.AddComponent<SphereCollider>();
         }
-
     }
 }

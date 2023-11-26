@@ -75,7 +75,7 @@ public class PlayerNetwork : NetworkBehaviour
             Debug.Log("[Guessing]");
             UIGameManager.Instance.SetGuessInputActive(true);
             UIGameManager.Instance.SetCountdownTextActive(true);
-            StartCoroutine(ObjectSpawner.Instance.FreezeAllObjectsWithDelay(3f));
+            StartCoroutine(ObjectSpawner.Instance.FreezeAllObjectsWithDelay(3.5f));
             StartCoroutine(StartCountdown(_guessTime));
         }
         else if (curr == GameState.Started)
@@ -107,7 +107,7 @@ public class PlayerNetwork : NetworkBehaviour
         {
             Debug.Log("Preparing the game...");
             int secondsToPrepare = 3;
-            objectCount.Value = UnityEngine.Random.Range(50, 80);
+            objectCount.Value = UnityEngine.Random.Range(500, 501);
             objectSize.Value = UnityEngine.Random.Range(0.3f, 0.8f);
             spawnFrequency.Value = 0.03f;
 
@@ -157,7 +157,6 @@ public class PlayerNetwork : NetworkBehaviour
     {
         foreach (NetworkClient networkClient in NetworkManager.Singleton.ConnectedClientsList)
         {
-            Debug.Log($"GR {networkClient.ClientId} - {networkClient.PlayerObject.GetComponent<PlayerNetwork>().isReady.Value}");
             if (networkClient.PlayerObject.GetComponent<PlayerNetwork>().isReady.Value) return;
         }
         StartCoroutine(ResetGame(8));
