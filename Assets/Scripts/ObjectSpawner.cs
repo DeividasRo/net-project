@@ -8,9 +8,10 @@ public class ObjectSpawner : NetworkSingleton<ObjectSpawner>
     [SerializeField]
     private GameObject _prefab;
     [Range(0, 2)]
-    [SerializeField]
     private float _objectSize;
     public NetworkVariable<int> objectTypeId = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    public NetworkVariable<int> objectColorId = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    public Material material;
     private List<NetworkObject> _networkObjectsSpawned { get; set; }
     private int _objectCount;
     private float _spawnFrequency;
@@ -29,10 +30,12 @@ public class ObjectSpawner : NetworkSingleton<ObjectSpawner>
         NetworkObjectPool.Singleton.InitializePool();
     }
 
-    public void StartSpawning(int objectCount, float spawnFrequency, Vector2 maxSpawnPositions)
+    public void StartSpawning(int objectCount, float objectSize, float spawnFrequency, Vector2 maxSpawnPositions)
     {
         objectTypeId.Value = Random.Range(0, 2);
+        objectColorId.Value = Random.Range(0, 3);
         Debug.Log(objectTypeId.Value);
+        _objectSize = objectSize;
         _objectCount = objectCount;
         _spawnFrequency = spawnFrequency;
         _maxPosX = maxSpawnPositions.x;

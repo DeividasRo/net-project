@@ -10,12 +10,13 @@ public class PlayerNetwork : NetworkBehaviour
 {
     private NetworkVariable<int> objectCount = new NetworkVariable<int>(50, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     private NetworkVariable<float> spawnFrequency = new NetworkVariable<float>(0.1f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    private NetworkVariable<float> objectSize = new NetworkVariable<float>(0.5f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     private NetworkVariable<Vector2> maxSpawnPositions = new NetworkVariable<Vector2>(new Vector2(2.8f, 2.8f), NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     public NetworkVariable<GameState> gameState = new NetworkVariable<GameState>(GameState.Waiting, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     public NetworkVariable<bool> isReady = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     public Dictionary<ulong, int> guessesDict = new Dictionary<ulong, int>();
     public Dictionary<ulong, int> sortedResultsDict = new Dictionary<ulong, int>();
-    private int _guessTime = 10;
+    private int _guessTime = 5;
 
     public override void OnNetworkSpawn()
     {
@@ -106,8 +107,10 @@ public class PlayerNetwork : NetworkBehaviour
         {
             Debug.Log("Preparing the game...");
             int secondsToPrepare = 3;
-            objectCount.Value = UnityEngine.Random.Range(50, 300);
+            objectCount.Value = UnityEngine.Random.Range(50, 80);
+            objectSize.Value = UnityEngine.Random.Range(0.3f, 0.8f);
             spawnFrequency.Value = 0.03f;
+
             while (secondsToPrepare > 0)
             {
                 secondsToPrepare--;
@@ -252,7 +255,7 @@ public class PlayerNetwork : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     private void StartGameServerRpc()
     {
-        ObjectSpawner.Instance.StartSpawning(objectCount.Value, spawnFrequency.Value, maxSpawnPositions.Value);
+        ObjectSpawner.Instance.StartSpawning(objectCount.Value, objectSize.Value, spawnFrequency.Value, maxSpawnPositions.Value);
         Debug.Log("Game started!");
         Debug.Log($"Object count: {objectCount.Value}");
     }

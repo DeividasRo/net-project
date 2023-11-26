@@ -5,6 +5,7 @@ using UnityEngine;
 public class FallingObject : NetworkBehaviour
 {
     public Mesh[] meshes;
+    public Material[] materials;
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
@@ -14,8 +15,10 @@ public class FallingObject : NetworkBehaviour
     private void ModifyObjectType()
     {
         int objectTypeId = ObjectSpawner.Instance.objectTypeId.Value;
+        int objectColorId = ObjectSpawner.Instance.objectColorId.Value;
         Destroy(GetComponent<Collider>());
         GetComponent<MeshFilter>().mesh = meshes[objectTypeId];
+        GetComponent<MeshRenderer>().material = materials[objectColorId];
         if (objectTypeId == 0)
         {
             this.AddComponent<BoxCollider>();

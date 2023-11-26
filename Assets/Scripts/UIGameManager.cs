@@ -66,6 +66,7 @@ public class UIGameManager : Singleton<UIGameManager>
     public void SetGuessInputActive(bool toActive)
     {
         _guessIF.gameObject.SetActive(toActive);
+        _guessIF.Select();
     }
 
     public void SetCountdownTextActive(bool toActive)
