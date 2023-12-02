@@ -2,7 +2,7 @@ using UnityEngine;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine.UI;
-using JetBrains.Annotations;
+using Unity.Collections;
 using System.Collections.Generic;
 
 public class UIGameManager : Singleton<UIGameManager>
@@ -88,10 +88,10 @@ public class UIGameManager : Singleton<UIGameManager>
         _countdownText.text = countdownText;
     }
 
-    public void SetRoundScoresText(Dictionary<ulong, int> resultsDict)
+    public void SetRoundScoresText(Dictionary<FixedString32Bytes, int> resultsDict)
     {
         _resultsText.text = "";
-        foreach (KeyValuePair<ulong, int> result in resultsDict)
+        foreach (KeyValuePair<FixedString32Bytes, int> result in resultsDict)
         {
             _resultsText.text += $"{result.Key} - {result.Value}\n";
         }

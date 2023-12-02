@@ -2,9 +2,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.WebSockets;
 using Unity.Netcode;
 using UnityEngine;
+using Unity.Collections;
 
 public class PlayerNetwork : NetworkBehaviour
 {
@@ -14,8 +14,9 @@ public class PlayerNetwork : NetworkBehaviour
     private NetworkVariable<Vector2> maxSpawnPositions = new NetworkVariable<Vector2>(new Vector2(2.8f, 2.8f), NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     public NetworkVariable<GameState> gameState = new NetworkVariable<GameState>(GameState.Waiting, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     public NetworkVariable<bool> isReady = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    public NetworkVariable<FixedString32Bytes> playerName = new NetworkVariable<FixedString32Bytes>("Guest", NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     public Dictionary<ulong, int> guessesDict = new Dictionary<ulong, int>();
-    public Dictionary<ulong, int> sortedResultsDict = new Dictionary<ulong, int>();
+    public Dictionary<FixedString32Bytes, int> sortedResultsDict = new Dictionary<FixedString32Bytes, int>();
     private int _guessTime = 5;
 
     public override void OnNetworkSpawn()
@@ -24,6 +25,10 @@ public class PlayerNetwork : NetworkBehaviour
         if (IsHost)
         {
             NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
+        }
+        if (IsOwner)
+        {
+            playerName.Value = PlayerPrefs.GetString("PlayerName", "Guest");
         }
         gameState.OnValueChanged += OnGameStateValueChanged;
         isReady.OnValueChanged += OnIsReadyValueChanged;
@@ -44,6 +49,7 @@ public class PlayerNetwork : NetworkBehaviour
     {
         base.OnNetworkDespawn();
         gameState.OnValueChanged -= OnGameStateValueChanged;
+        isReady.OnValueChanged -= OnIsReadyValueChanged;
     }
 
     private void OnClientConnected(ulong clientId)
@@ -107,7 +113,7 @@ public class PlayerNetwork : NetworkBehaviour
         {
             Debug.Log("Preparing the game...");
             int secondsToPrepare = 3;
-            objectCount.Value = UnityEngine.Random.Range(500, 501);
+            objectCount.Value = UnityEngine.Random.Range(50, 100);
             objectSize.Value = UnityEngine.Random.Range(0.3f, 0.8f);
             spawnFrequency.Value = 0.03f;
 
@@ -226,28 +232,28 @@ public class PlayerNetwork : NetworkBehaviour
             resultsDict[guess.Key] = Math.Abs(objectCount.Value - guess.Value);
             Debug.Log($"Key: {guess.Key}, Value:{guess.Value}");
         }
-        sortedResultsDict = resultsDict.OrderBy(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
+        sortedResultsDict = resultsDict.OrderBy(x => x.Value).ToDictionary(x => NetworkManager.Singleton.ConnectedClientsList[Convert.ToInt32(x.Key.ToString())].PlayerObject.GetComponent<PlayerNetwork>().playerName.Value, x => x.Value);
 
-        ulong[] clientIds = new ulong[sortedResultsDict.Count];
+        FixedString32Bytes[] clientNames = new FixedString32Bytes[sortedResultsDict.Count];
         int[] values = new int[sortedResultsDict.Count];
         int idx = 0;
-        foreach (KeyValuePair<ulong, int> result in sortedResultsDict)
+        foreach (KeyValuePair<FixedString32Bytes, int> result in sortedResultsDict)
         {
-            clientIds[idx] = result.Key;
+            clientNames[idx] = result.Key.ToString();
             values[idx] = result.Value;
             idx++;
         }
 
-        SyncResultsDictClientRpc(clientIds, values);
+        SyncResultsDictClientRpc(clientNames, values);
         SetGameStateServerRpc(GameState.GameEnded);
     }
 
     [ClientRpc]
-    private void SyncResultsDictClientRpc(ulong[] clientIds, int[] values)
+    private void SyncResultsDictClientRpc(FixedString32Bytes[] clientNames, int[] values)
     {
         sortedResultsDict.Clear();
-        for (int i = 0; i < clientIds.Length; i++)
-            sortedResultsDict.Add(clientIds[i], values[i]);
+        for (int i = 0; i < clientNames.Length; i++)
+            sortedResultsDict.Add(clientNames[i], values[i]);
     }
 
 
