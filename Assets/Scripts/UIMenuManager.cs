@@ -63,4 +63,9 @@ public class UIMenuManager : MonoBehaviour
         _joinButton.interactable = false;
         _relay.CreateRelay();
     }
+
+    public void OnQuitButtonClicked()
+    {
+        Application.Quit();
+    }
 }

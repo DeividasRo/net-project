@@ -4,6 +4,7 @@ using Unity.Netcode;
 using UnityEngine.UI;
 using Unity.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 
 public class UIGameManager : Singleton<UIGameManager>
 {
@@ -100,5 +101,10 @@ public class UIGameManager : Singleton<UIGameManager>
     public void SetCorrectAnswerText(int answer)
     {
         _correctAnswerText.text = $"CORRECT ANSWER\n{answer}";
+    }
+
+    public void OnExitToMenuButtonClicked()
+    {
+        _playerNetwork.Disconnect();
     }
 }

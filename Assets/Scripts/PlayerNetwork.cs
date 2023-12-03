@@ -5,6 +5,7 @@ using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
 using Unity.Collections;
+using UnityEngine.SceneManagement;
 
 public class PlayerNetwork : NetworkBehaviour
 {
@@ -30,6 +31,7 @@ public class PlayerNetwork : NetworkBehaviour
         {
             playerName.Value = PlayerPrefs.GetString("PlayerName", "Guest");
         }
+        NetworkManager.Singleton.OnClientDisconnectCallback += HandleClientDisconnect;
         gameState.OnValueChanged += OnGameStateValueChanged;
         isReady.OnValueChanged += OnIsReadyValueChanged;
     }
@@ -55,6 +57,21 @@ public class PlayerNetwork : NetworkBehaviour
     private void OnClientConnected(ulong clientId)
     {
         Debug.Log($"Client {clientId} connected");
+        Debug.Log(NetworkManager.Singleton.ConnectedClientsList.Count);
+    }
+
+    public void Disconnect()
+    {
+        if (!IsHost)
+        {
+            NetworkManager.Singleton.Shutdown();
+            SceneManager.LoadScene("Menu", LoadSceneMode.Single);
+        }
+    }
+
+    private void HandleClientDisconnect(ulong clientId)
+    {
+        Debug.Log($"{clientId} has disconnected.");
     }
 
     private void OnGameStateValueChanged(GameState prev, GameState curr)

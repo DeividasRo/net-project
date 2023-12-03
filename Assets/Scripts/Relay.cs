@@ -13,6 +13,7 @@ public class Relay : MonoBehaviour
     public int maxConnections = 2;
     [HideInInspector]
     public string joinCode = "";
+
     private async void Start()
     {
         await UnityServices.InitializeAsync();
