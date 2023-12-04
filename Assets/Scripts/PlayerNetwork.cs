@@ -26,12 +26,12 @@ public class PlayerNetwork : NetworkBehaviour
         if (IsHost)
         {
             NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
+            NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
         }
         if (IsOwner)
         {
             playerName.Value = PlayerPrefs.GetString("PlayerName", "Guest");
         }
-        NetworkManager.Singleton.OnClientDisconnectCallback += HandleClientDisconnect;
         gameState.OnValueChanged += OnGameStateValueChanged;
         isReady.OnValueChanged += OnIsReadyValueChanged;
     }
@@ -52,6 +52,8 @@ public class PlayerNetwork : NetworkBehaviour
         base.OnNetworkDespawn();
         gameState.OnValueChanged -= OnGameStateValueChanged;
         isReady.OnValueChanged -= OnIsReadyValueChanged;
+        NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnected;
+        NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnected;
     }
 
     private void OnClientConnected(ulong clientId)
@@ -60,16 +62,30 @@ public class PlayerNetwork : NetworkBehaviour
         Debug.Log(NetworkManager.Singleton.ConnectedClientsList.Count);
     }
 
+    [ClientRpc]
+    private void DisconnectClientRpc()
+    {
+        if (IsHost) return;
+        Disconnect();
+    }
+
     public void Disconnect()
     {
-        if (!IsHost)
+        if (IsHost)
+        {
+            DisconnectClientRpc();
+            NetworkManager.Singleton.Shutdown();
+            SceneManager.LoadScene("Menu", LoadSceneMode.Single);
+        }
+        else
         {
             NetworkManager.Singleton.Shutdown();
             SceneManager.LoadScene("Menu", LoadSceneMode.Single);
         }
+
     }
 
-    private void HandleClientDisconnect(ulong clientId)
+    private void OnClientDisconnected(ulong clientId)
     {
         Debug.Log($"{clientId} has disconnected.");
     }
