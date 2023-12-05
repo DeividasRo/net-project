@@ -7,11 +7,10 @@ public class ObjectSpawner : NetworkSingleton<ObjectSpawner>
 {
     [SerializeField]
     private GameObject _prefab;
-    [Range(0, 2)]
-    private float _objectSize;
     public NetworkVariable<int> objectMeshId = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     public NetworkVariable<int> objectColorId = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     private List<NetworkObject> _networkObjectsSpawned { get; set; }
+    private float _objectSize;
     private int _objectCount;
     private float _spawnFrequency;
     private float _maxPosX, _maxPosZ;

@@ -6,34 +6,50 @@ using Unity.Netcode;
 using UnityEngine;
 using Unity.Collections;
 using UnityEngine.SceneManagement;
+using System.Net.WebSockets;
 
 public class PlayerNetwork : NetworkBehaviour
 {
     private NetworkVariable<int> objectCount = new NetworkVariable<int>(50, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     private NetworkVariable<float> spawnFrequency = new NetworkVariable<float>(0.1f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     private NetworkVariable<float> objectSize = new NetworkVariable<float>(0.5f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
-    private NetworkVariable<Vector2> maxSpawnPositions = new NetworkVariable<Vector2>(new Vector2(2.8f, 2.8f), NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    private NetworkVariable<Vector2> maxSpawnPositions = new NetworkVariable<Vector2>(new Vector2(2, 2), NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    public NetworkVariable<bool> isReservoirSpawned = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    private NetworkVariable<int> reservoirId = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     public NetworkVariable<GameState> gameState = new NetworkVariable<GameState>(GameState.Waiting, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     public NetworkVariable<bool> isReady = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     public NetworkVariable<FixedString32Bytes> playerName = new NetworkVariable<FixedString32Bytes>("Guest", NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     public Dictionary<ulong, int> guessesDict = new Dictionary<ulong, int>();
-    public Dictionary<FixedString32Bytes, int> sortedResultsDict = new Dictionary<FixedString32Bytes, int>();
+    public Dictionary<ulong, Tuple<FixedString32Bytes, int>> sortedResultsDict = new Dictionary<ulong, Tuple<FixedString32Bytes, int>>();
+    [SerializeField]
+    private List<ReservoirScriptableObject> _reservoirSOList;
     private int _guessTime = 5;
+    private GameObject spawnedReservoir = null;
+
 
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
-        if (IsHost)
+        if (IsHost && IsOwner)
         {
             NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
             NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
+            if (!isReservoirSpawned.Value)
+            {
+                spawnedReservoir = Instantiate(_reservoirSOList[reservoirId.Value].reservoirPrefab, Vector3.zero, Quaternion.identity);
+                spawnedReservoir.GetComponent<NetworkObject>().Spawn();
+                isReservoirSpawned.Value = true;
+            }
         }
         if (IsOwner)
         {
             playerName.Value = PlayerPrefs.GetString("PlayerName", "Guest");
+            //Debug.Log($"{isReady.Value}, {gameState.Value}");
+            Debug.Log(playerName.Value);
         }
         gameState.OnValueChanged += OnGameStateValueChanged;
         isReady.OnValueChanged += OnIsReadyValueChanged;
+        Debug.Log("Player spawned");
     }
 
     private void OnIsReadyValueChanged(bool prev, bool curr)
@@ -59,7 +75,6 @@ public class PlayerNetwork : NetworkBehaviour
     private void OnClientConnected(ulong clientId)
     {
         Debug.Log($"Client {clientId} connected");
-        Debug.Log(NetworkManager.Singleton.ConnectedClientsList.Count);
     }
 
     [ClientRpc]
@@ -132,6 +147,16 @@ public class PlayerNetwork : NetworkBehaviour
         else if (curr == GameState.Waiting)
         {
             Debug.Log("[Waiting]");
+            if (IsHost)
+            {
+                if (isReservoirSpawned.Value)
+                {
+                    spawnedReservoir.GetComponent<NetworkObject>().Despawn();
+                    Destroy(spawnedReservoir);
+                    spawnedReservoir = Instantiate(_reservoirSOList[reservoirId.Value].reservoirPrefab, Vector3.zero, Quaternion.identity);
+                    spawnedReservoir.GetComponent<NetworkObject>().Spawn();
+                }
+            }
             UIGameManager.Instance.SetReadyButtonActive(true);
             UIGameManager.Instance.SetCorrectAnswerTextActive(false);
             UIGameManager.Instance.ResetGuessInputText();
@@ -146,8 +171,9 @@ public class PlayerNetwork : NetworkBehaviour
         {
             Debug.Log("Preparing the game...");
             int secondsToPrepare = 3;
-            objectCount.Value = UnityEngine.Random.Range(50, 100);
-            objectSize.Value = UnityEngine.Random.Range(0.3f, 0.8f);
+            objectCount.Value = UnityEngine.Random.Range(70, 500);
+            objectSize.Value = UnityEngine.Random.Range(0.3f, 0.75f);
+            maxSpawnPositions.Value = new Vector2(_reservoirSOList[reservoirId.Value].maxX, _reservoirSOList[reservoirId.Value].maxY);
             spawnFrequency.Value = 0.03f;
 
             while (secondsToPrepare > 0)
@@ -169,6 +195,8 @@ public class PlayerNetwork : NetworkBehaviour
             ObjectSpawner.Instance.DestroyAllObjects();
 
             SetGameStateServerRpc(GameState.GuessingEnded);
+
+            reservoirId.Value = UnityEngine.Random.Range(0, 2);
         }
     }
 
@@ -265,28 +293,30 @@ public class PlayerNetwork : NetworkBehaviour
             resultsDict[guess.Key] = Math.Abs(objectCount.Value - guess.Value);
             Debug.Log($"Key: {guess.Key}, Value:{guess.Value}");
         }
-        sortedResultsDict = resultsDict.OrderBy(x => x.Value).ToDictionary(x => NetworkManager.Singleton.ConnectedClientsList[Convert.ToInt32(x.Key.ToString())].PlayerObject.GetComponent<PlayerNetwork>().playerName.Value, x => x.Value);
+        sortedResultsDict = resultsDict.OrderBy(x => x.Value).ToDictionary(x => x.Key, x => new Tuple<FixedString32Bytes, int>(NetworkManager.Singleton.ConnectedClientsList[Convert.ToInt32(x.Key.ToString())].PlayerObject.GetComponent<PlayerNetwork>().playerName.Value, x.Value));
 
-        FixedString32Bytes[] clientNames = new FixedString32Bytes[sortedResultsDict.Count];
+        ulong[] clientIds = new ulong[sortedResultsDict.Count];
         int[] values = new int[sortedResultsDict.Count];
+        FixedString32Bytes[] names = new FixedString32Bytes[sortedResultsDict.Count];
         int idx = 0;
-        foreach (KeyValuePair<FixedString32Bytes, int> result in sortedResultsDict)
+        foreach (KeyValuePair<ulong, Tuple<FixedString32Bytes, int>> result in sortedResultsDict)
         {
-            clientNames[idx] = result.Key.ToString();
-            values[idx] = result.Value;
+            clientIds[idx] = result.Key;
+            values[idx] = result.Value.Item2;
+            names[idx] = result.Value.Item1;
             idx++;
         }
 
-        SyncResultsDictClientRpc(clientNames, values);
+        SyncResultsDictClientRpc(clientIds, values, names);
         SetGameStateServerRpc(GameState.GameEnded);
     }
 
     [ClientRpc]
-    private void SyncResultsDictClientRpc(FixedString32Bytes[] clientNames, int[] values)
+    private void SyncResultsDictClientRpc(ulong[] clientIds, int[] values, FixedString32Bytes[] names)
     {
         sortedResultsDict.Clear();
-        for (int i = 0; i < clientNames.Length; i++)
-            sortedResultsDict.Add(clientNames[i], values[i]);
+        for (int i = 0; i < clientIds.Length; i++)
+            sortedResultsDict.Add(clientIds[i], new Tuple<FixedString32Bytes, int>(names[i], values[i]));
     }
 
 

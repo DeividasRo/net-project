@@ -5,6 +5,7 @@ using UnityEngine.UI;
 using Unity.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
+using System;
 
 public class UIGameManager : Singleton<UIGameManager>
 {
@@ -89,12 +90,12 @@ public class UIGameManager : Singleton<UIGameManager>
         _countdownText.text = countdownText;
     }
 
-    public void SetRoundScoresText(Dictionary<FixedString32Bytes, int> resultsDict)
+    public void SetRoundScoresText(Dictionary<ulong, Tuple<FixedString32Bytes, int>> resultsDict)
     {
         _resultsText.text = "";
-        foreach (KeyValuePair<FixedString32Bytes, int> result in resultsDict)
+        foreach (KeyValuePair<ulong, Tuple<FixedString32Bytes, int>> result in resultsDict)
         {
-            _resultsText.text += $"{result.Key} - {result.Value}\n";
+            _resultsText.text += $"{result.Value.Item1} - {result.Value.Item2}\n";
         }
     }
 
