@@ -2,6 +2,7 @@ using System.Collections;
 using UnityEngine;
 using Unity.Netcode;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 
 public class ObjectSpawner : NetworkSingleton<ObjectSpawner>
 {
@@ -16,22 +17,18 @@ public class ObjectSpawner : NetworkSingleton<ObjectSpawner>
     private float _maxPosX, _maxPosZ;
     private int _objectsSpawnedCount = 0;
 
-    private void Awake()
+    public override void OnNetworkSpawn()
     {
         _networkObjectsSpawned = new List<NetworkObject>();
-        NetworkManager.Singleton.OnServerStarted += InitializeObjectPool;
-    }
-
-    private void InitializeObjectPool()
-    {
-        Debug.Log("Object pool initialized.");
         NetworkObjectPool.Singleton.InitializePool();
     }
 
     public void StartSpawning(int objectCount, float objectSize, float spawnFrequency, Vector2 maxSpawnPositions)
     {
+        ;
         objectMeshId.Value = Random.Range(0, 2);
         objectColorId.Value = Random.Range(0, 3);
+        Debug.Log($"{objectMeshId.Value}, {objectColorId.Value}");
         _objectSize = objectSize;
         _objectCount = objectCount;
         _spawnFrequency = spawnFrequency;

@@ -36,7 +36,7 @@ public class UIGameManager : Singleton<UIGameManager>
 
     public void OnReadyButtonClicked()
     {
-        _playerNetwork.SetPlayerReady();
+        _playerNetwork.SetPlayerReady(true);
     }
 
     public void UpdateReadyButtonColorByReadyState(bool ready)
