@@ -13,6 +13,8 @@ public class UIMenuManager : MonoBehaviour
     [SerializeField]
     private TMP_InputField _joinCodeIF, _nameIF;
 
+    private bool _canJoin = false, _canHost = false;
+
     private void Awake()
     {
         _nameIF.text = PlayerPrefs.GetString("PlayerName", "");
@@ -24,22 +26,31 @@ public class UIMenuManager : MonoBehaviour
         _nameIF.onValueChanged.AddListener(delegate { OnNameIFValueChanged(); });
     }
 
-    private void UpdateJoinButtonState()
+    private void UpdateJoinState()
     {
         if (_joinCodeIF.text.Length == _joinCodeIF.characterLimit && _joinCodeIF.text.All(char.IsLetterOrDigit) &&
             _nameIF.text.Length >= 3 && _nameIF.text.All(char.IsLetterOrDigit))
         {
-            _joinButton.interactable = true;
+            _canJoin = true;
         }
         else
         {
-            _joinButton.interactable = false;
+            _canJoin = false;
         }
+    }
+
+    private void UpdateHostState()
+    {
+        if (_nameIF.text.Length >= 3 && _nameIF.text.All(char.IsLetterOrDigit))
+            _canHost = true;
+        else
+            _canHost = false;
+
     }
 
     private void OnJoinCodeIFValueChanged()
     {
-        UpdateJoinButtonState();
+        UpdateJoinState();
     }
 
     private void OnNameIFValueChanged()
@@ -48,17 +59,28 @@ public class UIMenuManager : MonoBehaviour
         {
             PlayerPrefs.SetString("PlayerName", _nameIF.text);
         }
-        UpdateJoinButtonState();
+        UpdateJoinState();
+        UpdateHostState();
     }
 
     public void OnJoinButtonClicked()
     {
+        if (!_canJoin)
+        {
+            StartCoroutine(FlashButtonOutlineRed(_joinButton));
+            return;
+        }
         _relay.joinCode = _joinCodeIF.text.Substring(0, _joinCodeIF.characterLimit);
         _relay.JoinRelay();
     }
 
     public void OnHostButtonClicked()
     {
+        if (!_canHost)
+        {
+            StartCoroutine(FlashButtonOutlineRed(_hostButton));
+            return;
+        }
         _hostButton.interactable = false;
         _joinButton.interactable = false;
         _relay.CreateRelay();
@@ -67,5 +89,13 @@ public class UIMenuManager : MonoBehaviour
     public void OnQuitButtonClicked()
     {
         Application.Quit();
+    }
+
+    private IEnumerator FlashButtonOutlineRed(Button button)
+    {
+        Color startColor = button.GetComponent<Outline>().effectColor;
+        button.GetComponent<Outline>().effectColor = Color.red;
+        yield return new WaitForSeconds(0.2f);
+        button.GetComponent<Outline>().effectColor = startColor;
     }
 }
