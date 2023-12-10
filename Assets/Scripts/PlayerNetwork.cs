@@ -212,7 +212,7 @@ public class PlayerNetwork : NetworkBehaviour
         Debug.Log("Preparing the game...");
         int secondsToPrepare = 3;
         guessCount.Value = 0;
-        objectCount.Value = UnityEngine.Random.Range(50, 500);
+        objectCount.Value = UnityEngine.Random.Range(60, 500);
         objectSize.Value = UnityEngine.Random.Range(0.32f, 0.65f);
         maxSpawnPositions.Value = new Vector2(_reservoirSOList[reservoirId.Value].maxX, _reservoirSOList[reservoirId.Value].maxY);
         spawnFrequency.Value = 0.03f;
@@ -227,7 +227,7 @@ public class PlayerNetwork : NetworkBehaviour
         StartGameServerRpc();
 
 
-        yield return new WaitForSeconds(objectCount.Value * spawnFrequency.Value * 1.7f);
+        yield return new WaitForSeconds(objectCount.Value * spawnFrequency.Value * 1.65f);
 
         SetGameStateServerRpc(GameState.Guessing);
 
