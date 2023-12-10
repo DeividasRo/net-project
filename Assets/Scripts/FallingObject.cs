@@ -35,5 +35,9 @@ public class FallingObject : NetworkBehaviour
         {
             this.AddComponent<SphereCollider>();
         }
+        else if (_objectMeshId == 2)
+        {
+            this.AddComponent<CapsuleCollider>();
+        }
     }
 }

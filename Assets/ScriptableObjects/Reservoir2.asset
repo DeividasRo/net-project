@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: Reservoir2
   m_EditorClassIdentifier: 
   reservoirPrefab: {fileID: 648433751200707307, guid: a22cb991b7c5c55488bebe9aac3a96ea, type: 3}
-  maxY: 2
-  maxX: 2
+  maxY: 1.9
+  maxX: 1.9

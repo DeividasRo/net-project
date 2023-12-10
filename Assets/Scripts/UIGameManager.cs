@@ -4,8 +4,8 @@ using Unity.Netcode;
 using UnityEngine.UI;
 using Unity.Collections;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using System;
+using System.Collections;
 
 public class UIGameManager : Singleton<UIGameManager>
 {
@@ -20,7 +20,7 @@ public class UIGameManager : Singleton<UIGameManager>
 
     private void Start()
     {
-        _codeText.text = GameObject.Find("NetworkManager").GetComponent<Relay>().joinCode;
+        _codeText.text = NetworkManager.Singleton.GetComponent<Relay>().joinCode;
         _guessIF.onValidateInput += ValidateGuessInput;
         _playerNetwork = NetworkManager.Singleton.LocalClient.PlayerObject.GetComponent<PlayerNetwork>();
     }
@@ -80,7 +80,7 @@ public class UIGameManager : Singleton<UIGameManager>
         _correctAnswerText.gameObject.SetActive(toActive);
     }
 
-    public void SetRoundScoresTextActive(bool toActive)
+    public void SetScoreboardTextActive(bool toActive)
     {
         _resultsText.gameObject.SetActive(toActive);
     }
@@ -90,7 +90,7 @@ public class UIGameManager : Singleton<UIGameManager>
         _countdownText.text = countdownText;
     }
 
-    public void SetRoundScoresText(Dictionary<ulong, Tuple<FixedString32Bytes, int>> resultsDict)
+    public void SetScoreboardText(Dictionary<ulong, Tuple<FixedString32Bytes, int>> resultsDict)
     {
         _resultsText.text = "";
         foreach (KeyValuePair<ulong, Tuple<FixedString32Bytes, int>> result in resultsDict)

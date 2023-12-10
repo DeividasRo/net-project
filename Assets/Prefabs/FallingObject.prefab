@@ -214,7 +214,10 @@ MonoBehaviour:
   meshes:
   - {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
   - {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+  - {fileID: 10206, guid: 0000000000000000e000000000000000, type: 0}
   materials:
   - {fileID: 2100000, guid: e0e17f7bc9743d647ac22456a3f907b6, type: 2}
   - {fileID: 2100000, guid: ac3209650f8a8f24ca95cbc516256e19, type: 2}
+  - {fileID: 2100000, guid: 7c47a2f9d9212094ebaa4c0d1c27c8a7, type: 2}
+  - {fileID: 2100000, guid: cef102288f8111a4b9d54744d2aef67b, type: 2}
   - {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}

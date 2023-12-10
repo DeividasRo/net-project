@@ -12,7 +12,7 @@ public class Relay : MonoBehaviour
 {
     public int maxConnections = 2;
     [HideInInspector]
-    public string joinCode = "";
+    public string joinCode;
 
     private async void Start()
     {
@@ -40,6 +40,7 @@ public class Relay : MonoBehaviour
             NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(relayServerData);
             NetworkManager.Singleton.StartHost();
             NetworkManager.Singleton.SceneManager.LoadScene("Game", LoadSceneMode.Single);
+
         }
         catch (RelayServiceException e)
         {

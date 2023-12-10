@@ -2,7 +2,6 @@ using System.Collections;
 using UnityEngine;
 using Unity.Netcode;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 
 public class ObjectSpawner : NetworkSingleton<ObjectSpawner>
 {
@@ -26,9 +25,9 @@ public class ObjectSpawner : NetworkSingleton<ObjectSpawner>
     public void StartSpawning(int objectCount, float objectSize, float spawnFrequency, Vector2 maxSpawnPositions)
     {
         ;
-        objectMeshId.Value = Random.Range(0, 2);
-        objectColorId.Value = Random.Range(0, 3);
-        Debug.Log($"{objectMeshId.Value}, {objectColorId.Value}");
+        objectMeshId.Value = Random.Range(0, 3);
+        objectColorId.Value = Random.Range(0, 5);
+        // Debug.Log($"{objectMeshId.Value}, {objectColorId.Value}");
         _objectSize = objectSize;
         _objectCount = objectCount;
         _spawnFrequency = spawnFrequency;

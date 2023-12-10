@@ -7,12 +7,10 @@ using System.Collections;
 public class UIMenuManager : MonoBehaviour
 {
     [SerializeField]
-    private Relay _relay;
-    [SerializeField]
     private Button _hostButton, _joinButton;
     [SerializeField]
     private TMP_InputField _joinCodeIF, _nameIF;
-
+    private Relay _relay;
     private bool _canJoin = false, _canHost = false;
 
     private void Awake()
@@ -22,8 +20,10 @@ public class UIMenuManager : MonoBehaviour
 
     private void Start()
     {
+        UpdateHostState();
         _joinCodeIF.onValueChanged.AddListener(delegate { OnJoinCodeIFValueChanged(); });
         _nameIF.onValueChanged.AddListener(delegate { OnNameIFValueChanged(); });
+        _relay = GameObject.Find("NetworkManager").GetComponent<Relay>();
     }
 
     private void UpdateJoinState()
@@ -93,9 +93,8 @@ public class UIMenuManager : MonoBehaviour
 
     private IEnumerator FlashButtonOutlineRed(Button button)
     {
-        Color startColor = button.GetComponent<Outline>().effectColor;
         button.GetComponent<Outline>().effectColor = Color.red;
         yield return new WaitForSeconds(0.2f);
-        button.GetComponent<Outline>().effectColor = startColor;
+        button.GetComponent<Outline>().effectColor = Color.white;
     }
 }
