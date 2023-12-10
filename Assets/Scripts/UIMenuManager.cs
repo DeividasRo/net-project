@@ -55,10 +55,6 @@ public class UIMenuManager : MonoBehaviour
 
     private void OnNameIFValueChanged()
     {
-        if (_nameIF.text.Length >= 3)
-        {
-            PlayerPrefs.SetString("PlayerName", _nameIF.text);
-        }
         UpdateJoinState();
         UpdateHostState();
     }
@@ -71,6 +67,7 @@ public class UIMenuManager : MonoBehaviour
             return;
         }
         _relay.joinCode = _joinCodeIF.text.Substring(0, _joinCodeIF.characterLimit);
+        PlayerPrefs.SetString("PlayerName", _nameIF.text);
         _relay.JoinRelay();
     }
 
@@ -83,6 +80,7 @@ public class UIMenuManager : MonoBehaviour
         }
         _hostButton.interactable = false;
         _joinButton.interactable = false;
+        PlayerPrefs.SetString("PlayerName", _nameIF.text);
         _relay.CreateRelay();
     }
 
