@@ -10,17 +10,23 @@ using System.Collections;
 public class UIGameManager : Singleton<UIGameManager>
 {
     [SerializeField]
-    private TMP_Text _codeText, _countdownText, _correctAnswerText, _resultsText;
+    private TMP_Text _codeText, _countdownText, _correctAnswerText, _resultsText, _connectedCountText;
     [SerializeField]
     private Button _readyButton;
     [SerializeField]
     private TMP_InputField _guessIF;
     private PlayerNetwork _playerNetwork;
+    private int _maxConnections;
 
+
+    private void Awake()
+    {
+        _codeText.text = NetworkManager.Singleton.GetComponent<Relay>().joinCode;
+        _maxConnections = NetworkManager.Singleton.GetComponent<Relay>().maxConnections;
+    }
 
     private void Start()
     {
-        _codeText.text = NetworkManager.Singleton.GetComponent<Relay>().joinCode;
         _guessIF.onValidateInput += ValidateGuessInput;
         _playerNetwork = NetworkManager.Singleton.LocalClient.PlayerObject.GetComponent<PlayerNetwork>();
     }
@@ -97,6 +103,11 @@ public class UIGameManager : Singleton<UIGameManager>
         {
             _resultsText.text += $"{result.Value.Item1} - {result.Value.Item2}\n";
         }
+    }
+
+    public void SetConnectedCountText(int count)
+    {
+        _connectedCountText.text = $"{count}/{_maxConnections}";
     }
 
     public void SetCorrectAnswerText(int answer)

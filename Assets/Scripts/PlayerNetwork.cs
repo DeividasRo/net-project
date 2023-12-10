@@ -19,6 +19,7 @@ public class PlayerNetwork : NetworkBehaviour
     public NetworkVariable<ulong> serverClientId = new NetworkVariable<ulong>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     public NetworkVariable<int> reservoirId = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     public NetworkVariable<GameState> gameState = new NetworkVariable<GameState>(GameState.Waiting, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    public NetworkVariable<int> connectedCount = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     public NetworkVariable<bool> isReady = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Owner, NetworkVariableWritePermission.Server);
     public NetworkVariable<FixedString32Bytes> playerName = new NetworkVariable<FixedString32Bytes>("Guest", NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     private NetworkVariable<int> guess = new NetworkVariable<int>(0, NetworkVariableReadPermission.Owner, NetworkVariableWritePermission.Server);
@@ -35,20 +36,23 @@ public class PlayerNetwork : NetworkBehaviour
         base.OnNetworkSpawn();
         if (IsServer && IsOwner)
         {
+            connectedCount.Value = 0;
             serverClientId.Value = NetworkManager.Singleton.LocalClientId;
             if (spawnedReservoir == null)
             {
                 spawnedReservoir = Instantiate(_reservoirSOList[reservoirId.Value].reservoirPrefab, Vector3.zero, Quaternion.identity);
                 spawnedReservoir.GetComponent<NetworkObject>().Spawn();
             }
+            NetworkManager.Singleton.SceneManager.OnLoadComplete += OnLoadComplete;
+            NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
+            NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
         }
         if (IsOwner)
         {
             playerName.Value = PlayerPrefs.GetString("PlayerName", "Guest");
             Debug.Log(playerName.Value);
         }
-        NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
-        NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
+        connectedCount.OnValueChanged += OnConnectedCountChanged;
         isReady.OnValueChanged += OnIsReadyValueChanged;
         gameState.OnValueChanged += OnGameStateValueChanged;
         Debug.Log("Player spawned");
@@ -57,10 +61,32 @@ public class PlayerNetwork : NetworkBehaviour
     public override void OnNetworkDespawn()
     {
         base.OnNetworkDespawn();
+        UpdateConnectedCountServerRpc(-1);
+        connectedCount.OnValueChanged -= OnConnectedCountChanged;
         gameState.OnValueChanged -= OnGameStateValueChanged;
         isReady.OnValueChanged -= OnIsReadyValueChanged;
         NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnected;
         NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnected;
+    }
+
+    private void OnLoadComplete(ulong clientId, string sceneName, LoadSceneMode loadSceneMode)
+    {
+        Debug.Log("OnLoadComplete clientId: " + clientId + " scene: " + sceneName + " mode: " + loadSceneMode);
+        connectedCount.Value += 1;
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void UpdateConnectedCountServerRpc(int value)
+    {
+        Debug.Log(connectedCount.Value);
+        connectedCount.Value += value;
+    }
+
+
+    private void OnConnectedCountChanged(int prev, int curr)
+    {
+        Debug.Log($"{curr}, {connectedCount.Value}");
+        UIGameManager.Instance.SetConnectedCountText(curr);
     }
 
     private void OnIsReadyValueChanged(bool prev, bool curr)
@@ -111,6 +137,10 @@ public class PlayerNetwork : NetworkBehaviour
     private void OnClientDisconnected(ulong clientId)
     {
         Debug.Log($"{clientId} has disconnected.");
+        if (IsServer)
+        {
+            connectedCount.Value -= 1;
+        }
     }
 
     private void OnGameStateValueChanged(GameState prev, GameState curr)
@@ -197,14 +227,17 @@ public class PlayerNetwork : NetworkBehaviour
         StartGameServerRpc();
 
 
-        yield return new WaitForSeconds(objectCount.Value * spawnFrequency.Value + 2);
+        yield return new WaitForSeconds(objectCount.Value * spawnFrequency.Value * 1.7f);
 
         SetGameStateServerRpc(GameState.Guessing);
 
         yield return new WaitForSeconds(_guessTime);
 
         ObjectSpawner.Instance.DestroyAllObjects();
-        reservoirId.Value = UnityEngine.Random.Range(0, 2);
+        if (reservoirId.Value + 1 == _reservoirSOList.Count)
+            reservoirId.Value = 0;
+        else
+            reservoirId.Value++;
 
         SetGameStateServerRpc(GameState.GuessingEnded);
     }
@@ -223,7 +256,7 @@ public class PlayerNetwork : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     private void GameResetServerRpc()
     {
-        StartCoroutine(ResetGame(8));
+        StartCoroutine(ResetGame(7));
     }
 
     private IEnumerator ResetGame(int delay = 0)
