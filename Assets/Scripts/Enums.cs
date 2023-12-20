@@ -7,5 +7,6 @@ public enum GameState
     Started,
     Guessing,
     GuessingEnded,
-    GameEnded
+    GameEnded,
+    MatchEnded
 }

@@ -2217,7 +2217,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _codeText: {fileID: 2129210079}
   _countdownText: {fileID: 964694495}
-  _correctAnswerText: {fileID: 637307151}
+  _endGameAnswerText: {fileID: 637307151}
   _resultsText: {fileID: 476894690}
   _connectedCountText: {fileID: 1305939860}
   _readyButton: {fileID: 1890173025}

@@ -10,7 +10,7 @@ using System.Collections;
 public class UIGameManager : Singleton<UIGameManager>
 {
     [SerializeField]
-    private TMP_Text _codeText, _countdownText, _correctAnswerText, _resultsText, _connectedCountText;
+    private TMP_Text _codeText, _countdownText, _endGameAnswerText, _resultsText, _connectedCountText;
     [SerializeField]
     private Button _readyButton;
     [SerializeField]
@@ -81,9 +81,9 @@ public class UIGameManager : Singleton<UIGameManager>
     {
         _countdownText.gameObject.SetActive(toActive);
     }
-    public void SetCorrectAnswerTextActive(bool toActive)
+    public void SetEndGameTextActive(bool toActive)
     {
-        _correctAnswerText.gameObject.SetActive(toActive);
+        _endGameAnswerText.gameObject.SetActive(toActive);
     }
 
     public void SetScoreboardTextActive(bool toActive)
@@ -110,9 +110,9 @@ public class UIGameManager : Singleton<UIGameManager>
         _connectedCountText.text = $"{count}/{_maxConnections}";
     }
 
-    public void SetCorrectAnswerText(int answer)
+    public void SetEndGameText(string text)
     {
-        _correctAnswerText.text = $"CORRECT ANSWER\n{answer}";
+        _endGameAnswerText.text = text;
     }
 
     public void OnExitToMenuButtonClicked()

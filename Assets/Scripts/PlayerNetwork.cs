@@ -6,9 +6,6 @@ using Unity.Netcode;
 using UnityEngine;
 using Unity.Collections;
 using UnityEngine.SceneManagement;
-using System.Net.WebSockets;
-using Unity.Collections.LowLevel.Unsafe;
-using UnityEngine.SocialPlatforms;
 
 public class PlayerNetwork : NetworkBehaviour
 {
@@ -24,12 +21,13 @@ public class PlayerNetwork : NetworkBehaviour
     public NetworkVariable<FixedString32Bytes> playerName = new NetworkVariable<FixedString32Bytes>("Guest", NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     private NetworkVariable<int> guess = new NetworkVariable<int>(0, NetworkVariableReadPermission.Owner, NetworkVariableWritePermission.Server);
     private NetworkVariable<int> guessCount = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    private NetworkVariable<int> roundNumber = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     public Dictionary<ulong, int> resultsDict = new Dictionary<ulong, int>();
     public Dictionary<ulong, Tuple<FixedString32Bytes, int>> sortedResultsDict = new Dictionary<ulong, Tuple<FixedString32Bytes, int>>();
     [SerializeField]
     private List<ReservoirScriptableObject> _reservoirSOList;
     private GameObject spawnedReservoir = null;
-    private int _guessTime = 10;
+    private int _guessTime = 15;
 
     public override void OnNetworkSpawn()
     {
@@ -146,13 +144,20 @@ public class PlayerNetwork : NetworkBehaviour
     private void OnGameStateValueChanged(GameState prev, GameState curr)
     {
         //Debug.Log($"{prev}, {curr}");
-        if (curr == GameState.GameEnded)
+        if (curr == GameState.MatchEnded)
+        {
+            Debug.Log("[MatchEnded]");
+            //UIGameManager.Instance.SetEndGameText($"THE WINNER IS\n{sortedResultsDict.First().Key}");
+            resultsDict.Clear();
+            sortedResultsDict.Clear();
+        }
+        else if (curr == GameState.GameEnded)
         {
             Debug.Log("[GameEnded]");
-            UIGameManager.Instance.SetCorrectAnswerText(objectCount.Value);
-            UIGameManager.Instance.SetCorrectAnswerTextActive(true);
+            UIGameManager.Instance.SetEndGameText($"CORRECT ANSWER WAS\n{objectCount.Value}");
+            UIGameManager.Instance.SetEndGameTextActive(true);
+            UIGameManager.Instance.SetScoreboardTextActive(true);
             UIGameManager.Instance.SetScoreboardText(sortedResultsDict);
-            //UIGameManager.Instance.SetScoreboardTextActive(true);
             SetPlayerReadyServerRpc(false);
         }
         else if (curr == GameState.GuessingEnded)
@@ -200,46 +205,46 @@ public class PlayerNetwork : NetworkBehaviour
 
             }
             UIGameManager.Instance.SetReadyButtonActive(true);
-            UIGameManager.Instance.SetCorrectAnswerTextActive(false);
+            UIGameManager.Instance.SetEndGameTextActive(false);
             UIGameManager.Instance.ResetGuessInputText();
             UIGameManager.Instance.UpdateReadyButtonColorByReadyState(isReady.Value);
-            //UIGameManager.Instance.SetScoreboardTextActive(false);
+            if (roundNumber.Value == 0)
+                UIGameManager.Instance.SetScoreboardTextActive(false);
         }
     }
 
     private IEnumerator StartGameProcess()
     {
-        Debug.Log("Preparing the game...");
-        int secondsToPrepare = 3;
-        guessCount.Value = 0;
-        objectCount.Value = UnityEngine.Random.Range(60, 500);
-        objectSize.Value = UnityEngine.Random.Range(0.32f, 0.65f);
-        maxSpawnPositions.Value = new Vector2(_reservoirSOList[reservoirId.Value].maxX, _reservoirSOList[reservoirId.Value].maxY);
-        spawnFrequency.Value = 0.03f;
-
-        while (secondsToPrepare > 0)
+        if (IsServer)
         {
-            secondsToPrepare--;
-            yield return new WaitForSeconds(1f);
+            Debug.Log("Preparing the game...");
+            int secondsToPrepare = 3;
+            guessCount.Value = 0;
+            objectCount.Value = UnityEngine.Random.Range(40, 500);
+            objectSize.Value = UnityEngine.Random.Range(0.3f, 0.65f);
+            maxSpawnPositions.Value = new Vector2(_reservoirSOList[reservoirId.Value].maxX, _reservoirSOList[reservoirId.Value].maxY);
+            spawnFrequency.Value = 0.03f;
+
+            while (secondsToPrepare > 0)
+            {
+                secondsToPrepare--;
+                yield return new WaitForSeconds(1f);
+            }
+
+            SetGameStateServerRpc(GameState.Started);
+            StartGameServerRpc();
+
+
+            yield return new WaitForSeconds(objectCount.Value * spawnFrequency.Value + 2.5f);
+
+            SetGameStateServerRpc(GameState.Guessing);
+
+            yield return new WaitForSeconds(_guessTime);
+
+            ObjectSpawner.Instance.DestroyAllObjects();
+
+            SetGameStateServerRpc(GameState.GuessingEnded);
         }
-
-        SetGameStateServerRpc(GameState.Started);
-        StartGameServerRpc();
-
-
-        yield return new WaitForSeconds(objectCount.Value * spawnFrequency.Value * 1.65f);
-
-        SetGameStateServerRpc(GameState.Guessing);
-
-        yield return new WaitForSeconds(_guessTime);
-
-        ObjectSpawner.Instance.DestroyAllObjects();
-        if (reservoirId.Value + 1 == _reservoirSOList.Count)
-            reservoirId.Value = 0;
-        else
-            reservoirId.Value++;
-
-        SetGameStateServerRpc(GameState.GuessingEnded);
     }
 
     private IEnumerator StartCountdown(int countdownTime)
@@ -256,18 +261,41 @@ public class PlayerNetwork : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     private void GameResetServerRpc()
     {
-        StartCoroutine(ResetGame(7));
+        if (reservoirId.Value + 1 == _reservoirSOList.Count)
+            reservoirId.Value = 0;
+        else
+            reservoirId.Value++;
+
+        if (roundNumber.Value + 1 == 5)
+            roundNumber.Value = 0;
+        else
+            roundNumber.Value++;
+
+        if (roundNumber.Value == 0)
+        {
+            StartCoroutine(EndMatch(7));
+            StartCoroutine(ResetGame(14));
+        }
+        else
+        {
+            StartCoroutine(ResetGame(7));
+        }
+    }
+
+    private IEnumerator EndMatch(int delay = 0)
+    {
+        if (IsServer)
+        {
+            yield return new WaitForSeconds(delay);
+            SetGameStateServerRpc(GameState.MatchEnded);
+        }
     }
 
     private IEnumerator ResetGame(int delay = 0)
     {
         if (IsServer)
         {
-            while (delay > 0)
-            {
-                delay--;
-                yield return new WaitForSeconds(1f);
-            }
+            yield return new WaitForSeconds(delay);
             SetGameStateServerRpc(GameState.Waiting);
         }
     }
@@ -362,7 +390,6 @@ public class PlayerNetwork : NetworkBehaviour
     [ClientRpc]
     private void SyncResultsDictClientRpc(ulong[] clientIds, int[] values, FixedString32Bytes[] names)
     {
-        sortedResultsDict.Clear();
         for (int i = 0; i < clientIds.Length; i++)
         {
             Debug.Log($"Value: {values[i]}");

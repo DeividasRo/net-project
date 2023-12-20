@@ -95,7 +95,7 @@ MonoBehaviour:
   ConnectionData:
     Address: 127.0.0.1
     Port: 7777
-    ServerListenAddress: 127.0.0.1
+    ServerListenAddress: 0.0.0.0
   DebugSimulator:
     PacketDelayMS: 0
     PacketJitterMS: 0
@@ -112,7 +112,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9f250bc513373a8488c6fc10e39e03d8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxConnections: 3
+  maxConnections: 2
   joinCode: 
 --- !u!114 &4162997475322932506
 MonoBehaviour:
